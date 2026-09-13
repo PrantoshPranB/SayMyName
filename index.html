@@ -1,115 +1,578 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SayMyName — say my name, properly</title>
-<meta name="description" content="Record how your name is said. Share it as a link that opens anywhere.">
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Say My Name</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDF1F6;
+    --ink:#14203A;
+    --ink-soft:#6C7B94;
+    --line:#CFD8E4;
+    --rec:#D8305F;
+    --live:#2E9C87;
+    --card:#FFFFFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    justify-content:center;
+    padding:32px 20px 80px;
+  }
+  .wrap{width:100%;max-width:520px}
+
+  header{margin-bottom:34px}
+  .mark{
+    font-family:Newsreader,Georgia,serif;
+    font-size:20px;
+    font-weight:500;
+    letter-spacing:-0.01em;
+  }
+  .mark span{color:var(--ink-soft)}
+  .lede{
+    font-family:Newsreader,Georgia,serif;
+    font-size:29px;
+    line-height:1.25;
+    font-weight:300;
+    margin:22px 0 0;
+    letter-spacing:-0.015em;
+    max-width:19em;
+  }
+  .sub{color:var(--ink-soft);font-size:14.5px;margin-top:12px;max-width:34em}
+
+  /* ---- the card being made ---- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 24px 22px;
+    box-shadow:0 1px 0 rgba(20,32,58,.04);
+  }
+  .card-name{
+    font-family:Newsreader,Georgia,serif;
+    font-size:38px;
+    line-height:1.1;
+    font-weight:400;
+    letter-spacing:-0.02em;
+    word-break:break-word;
+    min-height:42px;
+  }
+  .card-name.empty{color:var(--line)}
+  .card-phon{
+    font-size:15px;
+    color:var(--ink-soft);
+    margin-top:7px;
+    font-variant-numeric:tabular-nums;
+    min-height:23px;
+  }
+
+  /* ---- waveform ---- */
+  .wave-slot{
+    margin-top:20px;
+    height:64px;
+    border-radius:9px;
+    background:#F4F7FA;
+    border:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    position:relative;
+  }
+  canvas{display:block;width:100%;height:100%}
+  .wave-hint{
+    position:absolute;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    padding:0 14px;
+    text-align:center;
+    line-height:1.35;
+  }
+  .timer{
+    position:absolute;right:11px;bottom:7px;
+    font-size:12px;color:var(--rec);
+    font-variant-numeric:tabular-nums;
+    opacity:0;transition:opacity .18s;
+  }
+  .timer.on{opacity:1}
+  .timer.done{color:var(--ink-soft)}
+
+  /* ---- controls ---- */
+  .row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button{
+    font-family:inherit;font-size:15px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:#fff;color:var(--ink);
+    padding:11px 17px;
+    cursor:pointer;
+    transition:background .14s,border-color .14s,transform .05s;
+  }
+  button:hover:not(:disabled){background:#F4F7FA}
+  button:active:not(:disabled){transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:default}
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  .primary{
+    background:var(--ink);color:#fff;border-color:var(--ink);
+    flex:1;min-width:150px;font-weight:500;
+  }
+  .primary:hover:not(:disabled){background:#1E2E4E}
+  .rec{
+    background:var(--rec);border-color:var(--rec);color:#fff;
+    flex:1;min-width:150px;font-weight:500;
+    display:flex;align-items:center;justify-content:center;gap:9px;
+  }
+  .rec:hover:not(:disabled){background:#C22954}
+  .dot{width:9px;height:9px;border-radius:50%;background:#fff}
+  .rec.live .dot{animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.rec.live .dot{animation:none}}
+  .quiet{color:var(--ink-soft)}
+  .danger{color:var(--rec);border-color:#EFC9D5}
+  .danger:hover:not(:disabled){background:#FDF2F5}
+
+  /* ---- fields ---- */
+  .field{margin-top:18px}
+  label{display:block;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px}
+  input{
+    width:100%;font-family:inherit;font-size:16px;color:var(--ink);
+    padding:11px 13px;border:1px solid var(--line);border-radius:10px;
+    background:#fff;
+  }
+  input:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:transparent}
+  .assure{
+    font-size:13px;color:var(--ink-soft);margin-top:14px;
+    display:flex;gap:8px;align-items:flex-start;line-height:1.45;
+  }
+  .assure svg{flex:none;margin-top:2px}
+
+  .note{
+    margin-top:26px;font-size:13px;color:var(--ink-soft);
+    border-top:1px solid var(--line);padding-top:16px;
+  }
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);
+    background:var(--ink);color:#fff;font-size:14px;
+    padding:11px 18px;border-radius:10px;
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+    max-width:90vw;text-align:center;
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---- modal ---- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(20,32,58,.42);
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .scrim.on{display:flex}
+  .modal{
+    background:#fff;border-radius:var(--radius);
+    max-width:400px;width:100%;padding:26px 24px 22px;position:relative;
+  }
+  .modal h2{
+    font-family:Newsreader,Georgia,serif;font-weight:400;
+    font-size:25px;margin:0 0 8px;letter-spacing:-0.015em;
+  }
+  .modal p{margin:0;color:var(--ink-soft);font-size:14.5px}
+  .close{
+    position:absolute;top:12px;right:12px;
+    border:none;background:none;font-size:20px;color:var(--ink-soft);
+    padding:6px 10px;line-height:1;border-radius:8px;
+  }
+  .oauth{display:flex;flex-direction:column;gap:9px;margin-top:20px}
+  .oauth button{width:100%;text-align:center;font-weight:500}
+  .slug{
+    font-family:Newsreader,Georgia,serif;font-size:19px;
+    background:#F4F7FA;border:1px solid var(--line);border-radius:9px;
+    padding:11px 13px;margin-top:16px;word-break:break-all;
+  }
+  .slug em{font-style:normal;color:var(--ink-soft)}
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<header class="topbar">
-  <div class="wordmark">SayMyName</div>
-  <p class="tagline">Record how your name is said. Share a link that opens anywhere.</p>
-</header>
+  <header>
+    <div class="mark">Say My <span>Name</span></div>
+    <h1 class="lede">Record how your name is actually said, once.</h1>
+    <p class="sub">You get a link. Put it in your email signature, your chat profile, or on a badge. Anyone can play it — no app, no account on their side.</p>
+  </header>
 
-<main class="wrap">
+  <div class="card">
+    <div class="card-name empty" id="cardName">Your name</div>
+    <div class="card-phon" id="cardPhon"></div>
 
-  <!-- ── The artifact: what the recipient sees ─────────────────────── -->
-  <section class="card" id="card" aria-label="Preview of your name card">
-    <button class="card-play" id="cardPlay" type="button" aria-label="Play name" disabled>
-      <svg viewBox="0 0 24 24" class="ic-play" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
-      <svg viewBox="0 0 24 24" class="ic-stop" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
-    </button>
-    <div class="card-body">
-      <div class="card-name" id="cardName">Your name</div>
-      <div class="card-phonetic" id="cardPhonetic">pro·nun·ci·a·tion</div>
-    </div>
-    <div class="card-url">
-      <span class="card-url-label">Your link will be</span>
-      <span class="card-url-value">saymyname.app/<span id="cardSlug">yourname</span></span>
-    </div>
-  </section>
-
-  <!-- ── The studio ────────────────────────────────────────────────── -->
-  <section class="studio" aria-label="Recorder">
-
-    <canvas id="wave" class="wave" height="120" aria-hidden="true"></canvas>
-
-    <div class="transport">
-      <button class="rec" id="recBtn" type="button">
-        <span class="rec-dot" aria-hidden="true"></span>
-        <span class="rec-label" id="recLabel">Record</span>
-      </button>
-      <div class="timer" id="timer">0:00 <span class="timer-max">/ 0:15</span></div>
+    <div class="wave-slot">
+      <canvas id="wave" aria-hidden="true"></canvas>
+      <div class="wave-hint" id="waveHint">No recording yet</div>
+      <div class="timer" id="timer">0.0s</div>
     </div>
 
-    <div class="takes" id="takes" hidden>
-      <button class="ghost" id="playBtn" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
-        <span id="playLabel">Play</span>
-      </button>
-      <button class="ghost" id="discardBtn" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M9.5 7V5.5h5V7M8 7l.8 11.2a1.5 1.5 0 0 0 1.5 1.3h3.4a1.5 1.5 0 0 0 1.5-1.3L16 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <span>Discard</span>
-      </button>
+    <div class="row" id="controls">
+      <button class="rec" id="recBtn"><span class="dot"></span><span id="recLabel">Record</span></button>
+      <button id="playBtn" disabled>Play</button>
+      <button class="danger" id="discardBtn" disabled>Discard</button>
     </div>
 
-    <p class="reassure">
-      Recording stays on your device. Nothing uploads until you publish.
-    </p>
-  </section>
+    <div class="field">
+      <label for="nameIn">Name</label>
+      <input id="nameIn" placeholder="Prantosh" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="phonIn">How to say it (optional)</label>
+      <input id="phonIn" placeholder="PRAWN-toshe" autocomplete="off">
+    </div>
 
-  <!-- ── The details ───────────────────────────────────────────────── -->
-  <section class="fields" aria-label="Your details">
-    <label class="field">
-      <span class="field-label">Name</span>
-      <input id="nameInput" type="text" placeholder="Prantosh Bhattacharyya" autocomplete="name" maxlength="60">
-    </label>
+    <div class="row">
+      <button class="primary" id="pubBtn" disabled>Publish</button>
+    </div>
 
-    <label class="field">
-      <span class="field-label">Phonetic spelling <em>optional</em></span>
-      <input id="phoneticInput" type="text" placeholder="PRAHN-tosh bhuh-TAH-char-yuh" maxlength="80">
-    </label>
-
-    <label class="field">
-      <span class="field-label">Link</span>
-      <div class="slug-wrap">
-        <span class="slug-prefix">saymyname.app/</span>
-        <input id="slugInput" type="text" placeholder="yourname" maxlength="40" spellcheck="false" autocapitalize="off">
-      </div>
-    </label>
-  </section>
-
-  <div class="publish-row">
-    <button class="publish" id="publishBtn" type="button" disabled>Publish my link</button>
+    <div class="assure">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M7 1L12 3v4c0 3-2.2 5.3-5 6-2.8-.7-5-3-5-6V3l5-2z" stroke="#6C7B94" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
+      <span>Your recording stays on this device until you publish. Discard removes it completely.</span>
+    </div>
   </div>
 
-</main>
+  <p class="note">Prototype. Recording and playback are real; publishing is stubbed out.</p>
+</div>
 
-<footer class="foot">Nothing on this page leaves your device.</footer>
-
-<!-- ── Publish modal ───────────────────────────────────────────────── -->
-<div class="scrim" id="scrim" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <button class="modal-x" id="modalX" type="button" aria-label="Close">&times;</button>
-    <h2 id="modalTitle">Claim your link</h2>
-    <p class="modal-sub">One account keeps <strong id="modalSlug">saymyname.app/yourname</strong> yours, so you can re-record later.</p>
-
-    <div class="providers">
-      <button class="provider" type="button" data-provider="Apple">Continue with Apple</button>
-      <button class="provider" type="button" data-provider="Google">Continue with Google</button>
-      <button class="provider" type="button" data-provider="Email">Continue with email</button>
+<div class="scrim" id="scrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <button class="close" id="closeBtn" aria-label="Keep listening">&times;</button>
+    <h2 id="mTitle">Sign in to keep it</h2>
+    <p>Your recording uploads now and gets a permanent link. You can change or delete it any time.</p>
+    <div class="slug" id="slugPrev">sayit.link/<em>your-name</em></div>
+    <div class="oauth">
+      <button>Continue with Google</button>
+      <button>Continue with Apple</button>
+      <button class="quiet" id="keepBtn">Not yet — keep listening</button>
     </div>
-
-    <p class="modal-note">Your recording stays on this device until you publish.</p>
-    <button class="modal-back" id="modalBack" type="button">Not yet — keep listening</button>
   </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="toast" id="toast"></div>
 
-<script src="app.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const recBtn=$('recBtn'), recLabel=$('recLabel'), playBtn=$('playBtn'),
+        discardBtn=$('discardBtn'), pubBtn=$('pubBtn'), nameIn=$('nameIn'),
+        phonIn=$('phonIn'), cardName=$('cardName'), cardPhon=$('cardPhon'),
+        canvas=$('wave'), hint=$('waveHint'), timer=$('timer'),
+        scrim=$('scrim'), toastEl=$('toast');
+
+  const ctx = canvas.getContext('2d');
+  const CAP_S = 15, BARW = 3, GAP = 2;
+
+  let media, recorder, chunks=[], blob=null, url=null, audio=null;
+  let audioCtx, analyser, raf, playRaf, startAt=0, wallS=0;
+  let peaks=[], duration=0, playing=false;
+
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  /* ---- drawing ---------------------------------------------------- */
+
+  function fit(){
+    const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio||1;
+    canvas.width = r.width*d; canvas.height = r.height*d;
+    ctx.setTransform(d,0,0,d,0,0);
+    redraw();
+  }
+  window.addEventListener('resize', fit);
+
+  function rounded(x,y,w,h,r){
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill(); }
+    else ctx.fillRect(x,y,w,h);
+  }
+
+  // progress < 0 draws every bar in baseColor; otherwise bars left of the
+  // playhead are drawn in --live, so the sweep tracks the audio.
+  function bars(data, baseColor, progress){
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    ctx.clearRect(0,0,w,h);
+    if(!data.length) return;
+
+    const n = Math.max(1, Math.floor(w/(BARW+GAP)));
+    const step = data.length/n;
+    const playedTo = progress >= 0 ? progress*n : -1;
+    const live = css('--live');
+
+    for(let i=0;i<n;i++){
+      // max across the slice, so a short peak is never sampled past
+      let v=0;
+      const a=Math.floor(i*step), b=Math.max(a+1, Math.floor((i+1)*step));
+      for(let j=a;j<b && j<data.length;j++) if(data[j]>v) v=data[j];
+
+      const bh = Math.max(2, Math.min(h-8, v*(h-8)));
+      ctx.fillStyle = i < playedTo ? live : baseColor;
+      rounded(i*(BARW+GAP)+1, (h-bh)/2, BARW, bh, 1.5);
+    }
+  }
+
+  function redraw(){
+    if(!peaks.length) return;
+    if(recorder && recorder.state==='recording') bars(peaks, css('--rec'), -1);
+    else if(playing) sweep();
+    else bars(peaks, css('--ink-soft'), -1);
+  }
+
+  function clearCanvas(){ ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight); }
+
+  /* ---- measuring the take itself ---------------------------------- */
+
+  // The bars drawn while recording come from the live mic — a meter, drawn on
+  // a wall clock. Once there is a file, measure that instead, so the picture
+  // and the sound are the same data.
+  async function measure(b){
+    let ac;
+    try{
+      ac = new (window.AudioContext||window.webkitAudioContext)();
+      const bytes = await b.arrayBuffer();
+      const decoded = await new Promise((res,rej)=>{
+        const maybe = ac.decodeAudioData(bytes, res, rej);   // older Safari is callback-only
+        if(maybe && maybe.then) maybe.then(res,rej);
+      });
+      const ch = decoded.getChannelData(0);
+      const n = 600;
+      const per = Math.max(1, Math.floor(ch.length/n));
+      const out = new Array(n);
+      let loudest = 0;
+      for(let i=0;i<n;i++){
+        let pk=0;
+        const s=i*per, e=Math.min(ch.length, s+per);
+        for(let j=s;j<e;j++){ const v = ch[j]<0 ? -ch[j] : ch[j]; if(v>pk) pk=v; }
+        out[i]=pk; if(pk>loudest) loudest=pk;
+      }
+      // normalise to the loudest moment so a quiet take reads as a shape;
+      // the floor keeps near-silence honestly flat
+      const gain = loudest > 0.02 ? 1/loudest : 0;
+      return { peaks: out.map(v=>v*gain), duration: decoded.duration };
+    }catch(e){
+      return null;
+    }finally{
+      if(ac && ac.state!=='closed') ac.close();
+    }
+  }
+
+  /* ---- recording --------------------------------------------------- */
+
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.classList.remove('on'), 2200);
+  }
+
+  function showHint(msg){
+    hint.style.display='block';
+    hint.textContent = msg;
+  }
+
+  function sync(){
+    const hasAudio = !!blob, hasName = nameIn.value.trim().length>0;
+    playBtn.disabled = !hasAudio;
+    discardBtn.disabled = !hasAudio;
+    pubBtn.disabled = !(hasAudio && hasName);
+  }
+
+  async function start(){
+    stopPlayback();
+    try{
+      // Plain constraints on purpose. autoGainControl in particular will ride
+      // the gain up through the quiet parts and hand back audible hiss.
+      media = await navigator.mediaDevices.getUserMedia({audio:true});
+    }catch(e){
+      showHint(e && e.name==='NotAllowedError'
+        ? 'Microphone blocked. Allow access and try again.'
+        : 'No microphone available.');
+      return;
+    }
+
+    chunks=[]; peaks=[]; duration=0;
+
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    // awaiting getUserMedia can cost us the user-gesture context, which leaves
+    // the AudioContext suspended and the analyser reading pure silence
+    if(audioCtx.state==='suspended'){ try{ await audioCtx.resume(); }catch(e){} }
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    audioCtx.createMediaStreamSource(media).connect(analyser);
+
+    // No mimeType: the browser's own default is the best-supported path on
+    // each engine, and forcing one is how you end up with an unplayable file.
+    recorder = new MediaRecorder(media);
+    recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+    recorder.onstop = () => { release(); finish(); };
+    recorder.start(250);   // flush periodically, so a failed final flush costs only the tail
+
+    startAt = performance.now();
+    hint.style.display='none';
+    timer.classList.add('on');
+    timer.classList.remove('done');
+    recBtn.classList.add('live');
+    recLabel.textContent = 'Stop';
+    playBtn.disabled = true; discardBtn.disabled = true; pubBtn.disabled = true;
+    loop();
+  }
+
+  function loop(){
+    const buf = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(buf);
+    let sum=0;
+    for(let i=0;i<buf.length;i++){ const d=(buf[i]-128)/128; sum+=d*d; }
+    peaks.push(Math.min(1, Math.sqrt(sum/buf.length)*3.4));
+    if(peaks.length>260) peaks.shift();
+
+    bars(peaks, css('--rec'), -1);
+    const secs = (performance.now()-startAt)/1000;
+    timer.textContent = secs.toFixed(1)+'s';
+    if(secs >= CAP_S){ stop(); return; }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function stop(){
+    if(!recorder || recorder.state!=='recording') return;
+    cancelAnimationFrame(raf);
+    wallS = (performance.now()-startAt)/1000;
+    // Only ask the recorder to stop. Tearing the mic and the AudioContext down
+    // here would cut the final flush off mid-write; that happens in onstop.
+    recorder.stop();
+  }
+
+  function release(){
+    if(media){ media.getTracks().forEach(t=>t.stop()); media=null; }
+    if(audioCtx && audioCtx.state!=='closed'){ audioCtx.close(); audioCtx=null; }
+  }
+
+  async function finish(){
+    recBtn.classList.remove('live');
+    recLabel.textContent = 'Record again';
+
+    blob = new Blob(chunks, {type: (recorder && recorder.mimeType) || ''});
+    if(!blob.size){
+      blob = null;
+      peaks = [];
+      clearCanvas();
+      timer.classList.remove('on');
+      recLabel.textContent = 'Record';
+      showHint('Nothing was captured. Check the input device and try again.');
+      sync();
+      return;
+    }
+
+    if(url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(blob);
+    audio = new Audio(url);
+    audio.onended = stopPlayback;
+
+    const m = await measure(blob);
+    if(m && m.duration > 0){
+      peaks = m.peaks;
+      duration = m.duration;
+    }else{
+      duration = wallS;   // undecodable: keep the live meter and the wall clock
+    }
+
+    timer.textContent = duration.toFixed(1)+'s';
+    timer.classList.add('on','done');
+    bars(peaks, css('--ink-soft'), -1);
+    sync();
+  }
+
+  /* ---- playback ----------------------------------------------------- */
+
+  // MediaRecorder webm commonly reports Infinity until it has been seeked, so
+  // fall back to the duration decoded from the samples — never the wall clock.
+  function playLength(){
+    return (audio && isFinite(audio.duration) && audio.duration>0) ? audio.duration : duration;
+  }
+
+  function sweep(){
+    const d = playLength();
+    bars(peaks, css('--ink-soft'), d>0 ? Math.min(1, audio.currentTime/d) : 0);
+    if(playing) playRaf = requestAnimationFrame(sweep);
+  }
+
+  function stopPlayback(){
+    cancelAnimationFrame(playRaf);
+    if(audio){ audio.pause(); audio.currentTime = 0; }
+    playing = false;
+    playBtn.textContent = 'Play';
+    if(peaks.length) bars(peaks, css('--ink-soft'), -1);
+  }
+
+  playBtn.addEventListener('click', ()=>{
+    if(!audio) return;
+    if(playing){ stopPlayback(); return; }
+    audio.currentTime = 0;
+    audio.play().then(()=>{
+      playing = true;
+      playBtn.textContent = 'Stop';
+      sweep();
+    }).catch(()=> toast('Could not play that take.'));
+  });
+
+  /* ---- wiring ------------------------------------------------------- */
+
+  nameIn.addEventListener('input', ()=>{
+    const v = nameIn.value.trim();
+    cardName.textContent = v || 'Your name';
+    cardName.classList.toggle('empty', !v);
+    sync();
+  });
+  phonIn.addEventListener('input', ()=>{ cardPhon.textContent = phonIn.value.trim(); });
+
+  recBtn.addEventListener('click', ()=>{
+    if(recorder && recorder.state==='recording') stop(); else start();
+  });
+
+  discardBtn.addEventListener('click', ()=>{
+    stopPlayback();
+    if(url) URL.revokeObjectURL(url);
+    blob=null; url=null; audio=null; chunks=[]; peaks=[]; duration=0;
+    clearCanvas();
+    timer.classList.remove('on','done');
+    showHint('No recording yet');
+    recLabel.textContent='Record';
+    sync();
+    toast('Deleted. Nothing was ever uploaded.');
+  });
+
+  pubBtn.addEventListener('click', ()=>{
+    const slug = nameIn.value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    $('slugPrev').innerHTML = 'sayit.link/' + (slug || '<em>your-name</em>');
+    scrim.classList.add('on');
+    $('closeBtn').focus();
+  });
+
+  function dismiss(){ scrim.classList.remove('on'); pubBtn.focus(); }
+  $('closeBtn').addEventListener('click', dismiss);
+  $('keepBtn').addEventListener('click', dismiss);
+  scrim.addEventListener('click', e => { if(e.target===scrim) dismiss(); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape' && scrim.classList.contains('on')) dismiss(); });
+
+  window.addEventListener('beforeunload', e => {
+    if(blob){ e.preventDefault(); e.returnValue=''; }
+  });
+
+  fit();
+  sync();
+})();
+</script>
 </body>
 </html>
