@@ -82,7 +82,9 @@ async function loadTake() {
     el.phoneticInput.value = rec.phonetic || '';
     el.slugInput.value = rec.slug || '';
     attachBlob();
+    await analyseBlob(state.blob);
     render();
+    drawWave();
     toast('Picked up where you left off.');
   } catch { /* nothing stored, or storage unavailable */ }
 }
@@ -222,10 +224,12 @@ function tick() {
   const rms = Math.sqrt(sum / buf.length);
   bucketPeak = Math.max(bucketPeak, Math.min(1, rms * 3.2));
 
-  if (now - bucketStart >= BUCKET_MS) {
+  // advance by whole buckets: if a frame was dropped, emit the bars it owed
+  // rather than letting one long bucket masquerade as 100ms
+  while (now - bucketStart >= BUCKET_MS && state.peaks.length < MAX_BARS) {
     state.peaks.push(bucketPeak);
     bucketPeak = 0;
-    bucketStart = now;
+    bucketStart += BUCKET_MS;
   }
 
   el.timer.innerHTML = `${fmt(elapsed)} <span class="timer-max">/ 0:15</span>`;
@@ -247,12 +251,68 @@ function stopRecording() {
   el.recLabel.textContent = 'Re-record';
 }
 
-function finishRecording(chunks, mimeType) {
+async function finishRecording(chunks, mimeType) {
   state.blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
   attachBlob();
+  // The live waveform was a VU meter hanging off the mic, drawn on a wall
+  // clock. Replace it with peaks measured from the recorded samples, so the
+  // picture and the sound are the same data.
+  await analyseBlob(state.blob);
   saveTake();
   render();
   drawWave();
+}
+
+/* ── measuring the take itself ───────────────────────────────────────── */
+
+let decodeCtx = null;
+
+function getDecodeCtx() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!decodeCtx || decodeCtx.state === 'closed') decodeCtx = new Ctx();
+  return decodeCtx;
+}
+
+// Older Safari's decodeAudioData is callback-only; newer returns a promise.
+function decodeAudio(ctx, arrayBuffer) {
+  return new Promise((resolve, reject) => {
+    const maybe = ctx.decodeAudioData(arrayBuffer, resolve, reject);
+    if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject);
+  });
+}
+
+async function analyseBlob(blob) {
+  try {
+    const bytes = await blob.arrayBuffer();
+    const buffer = await decodeAudio(getDecodeCtx(), bytes);
+    const data = buffer.getChannelData(0);
+    const perBucket = Math.max(1, Math.round(buffer.sampleRate * BUCKET_MS / 1000));
+    const bars = Math.min(MAX_BARS, Math.max(1, Math.ceil(data.length / perBucket)));
+
+    const peaks = new Array(bars);
+    let loudest = 0;
+    for (let b = 0; b < bars; b++) {
+      const start = b * perBucket;
+      const end = Math.min(data.length, start + perBucket);
+      let peak = 0;
+      for (let i = start; i < end; i++) {
+        const v = data[i] < 0 ? -data[i] : data[i];
+        if (v > peak) peak = v;
+      }
+      peaks[b] = peak;
+      if (peak > loudest) loudest = peak;
+    }
+
+    // Normalise to the loudest moment, so a quiet take reads as a shape
+    // instead of a flat line. Near-silence stays flat, which is honest.
+    const gain = loudest > 0.02 ? 1 / loudest : 0;
+    state.peaks = peaks.map((p) => p * gain);
+    state.durationMs = Math.min(MAX_MS, buffer.duration * 1000);
+    return true;
+  } catch {
+    // Undecodable: keep the live peaks and the wall clock. Worse, but drawn.
+    return false;
+  }
 }
 
 function attachBlob() {
@@ -270,6 +330,14 @@ function fmt(ms) {
 
 let playRaf = null;
 
+// MediaRecorder webm often reports Infinity until seeked, so fall back to the
+// duration decoded from the samples — never to the recording wall clock.
+function playbackDuration() {
+  return Number.isFinite(audio.duration) && audio.duration > 0
+    ? audio.duration
+    : state.durationMs / 1000;
+}
+
 function togglePlayback() {
   if (!state.blob) return;
   if (!audio.paused) { stopPlayback(); return; }
@@ -282,7 +350,7 @@ function togglePlayback() {
 }
 
 function trackPlayhead() {
-  const dur = state.durationMs / 1000;
+  const dur = playbackDuration();
   playHead = dur > 0 ? Math.min(1, audio.currentTime / dur) : 0;
   drawWave();
   if (!audio.paused) playRaf = requestAnimationFrame(trackPlayhead);
