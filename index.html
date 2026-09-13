@@ -351,22 +351,45 @@
       const n = 600;
       const per = Math.max(1, Math.floor(ch.length/n));
       const out = new Array(n);
-      let loudest = 0;
+      // RMS per bucket, not true peak. These bars are a loudness display, so a
+      // single-sample click should not tower over a spoken syllable — true
+      // peak is most of what made the shape look furry.
       for(let i=0;i<n;i++){
-        let pk=0;
+        let sum=0;
         const s=i*per, e=Math.min(ch.length, s+per);
-        for(let j=s;j<e;j++){ const v = ch[j]<0 ? -ch[j] : ch[j]; if(v>pk) pk=v; }
-        out[i]=pk; if(pk>loudest) loudest=pk;
+        for(let j=s;j<e;j++){ const v=ch[j]; sum += v*v; }
+        out[i] = Math.sqrt(sum/Math.max(1, e-s));
       }
-      // normalise to the loudest moment so a quiet take reads as a shape;
-      // the floor keeps near-silence honestly flat
-      const gain = loudest > 0.02 ? 1/loudest : 0;
-      return { peaks: out.map(v=>v*gain), duration: decoded.duration };
+      return { peaks: shape(out), duration: decoded.duration };
     }catch(e){
       return null;
     }finally{
       if(ac && ac.state!=='closed') ac.close();
     }
+  }
+
+  // Room tone lands as a low, near-constant band under every bucket. Measure
+  // it off the quiet end of the clip and subtract it, so silence draws flat
+  // and what is left is the speech.
+  function shape(raw){
+    const sorted = [...raw].sort((a,b)=>a-b);
+    const at = q => sorted[Math.min(sorted.length-1, Math.floor(sorted.length*q))];
+    const floor = at(0.20);
+    const ceiling = at(0.98);   // ignore one stray pop setting the whole scale
+
+    // If the clip is loud end to end there is no floor to find, and gating it
+    // would eat real signal. Only gate when a quiet band actually exists.
+    const gate = floor < ceiling*0.5 ? floor*1.6 : 0;
+    const span = Math.max(1e-6, ceiling - gate);
+
+    const lifted = raw.map(v =>
+      Math.pow(Math.min(1, Math.max(0, v - gate)/span), 0.65));  // lift mid-level speech
+
+    // 3-tap smoothing: takes the jitter off without flattening the attacks
+    return lifted.map((v,i,a) => {
+      const prev = i>0 ? a[i-1] : v, next = i<a.length-1 ? a[i+1] : v;
+      return (prev + 2*v + next)/4;
+    });
   }
 
   /* ---- recording --------------------------------------------------- */
@@ -393,9 +416,12 @@
   async function start(){
     stopPlayback();
     try{
-      // Plain constraints on purpose. autoGainControl in particular will ride
-      // the gain up through the quiet parts and hand back audible hiss.
-      media = await navigator.mediaDevices.getUserMedia({audio:true});
+      // noiseSuppression is the browser's own denoiser and is worth having.
+      // autoGainControl is the one to refuse: it rides the gain up through the
+      // quiet parts and hands back audible hiss.
+      media = await navigator.mediaDevices.getUserMedia({audio:{
+        noiseSuppression:true, echoCancellation:true, autoGainControl:false
+      }});
     }catch(e){
       showHint(e && e.name==='NotAllowedError'
         ? 'Microphone blocked. Allow access and try again.'
@@ -435,7 +461,8 @@
     analyser.getByteTimeDomainData(buf);
     let sum=0;
     for(let i=0;i<buf.length;i++){ const d=(buf[i]-128)/128; sum+=d*d; }
-    peaks.push(Math.min(1, Math.sqrt(sum/buf.length)*3.4));
+    // a small fixed gate — the finished take gets the measured one
+    peaks.push(Math.min(1, Math.max(0, Math.sqrt(sum/buf.length) - 0.012)*3.6));
     if(peaks.length>260) peaks.shift();
 
     bars(peaks, css('--rec'), -1);

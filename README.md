@@ -29,6 +29,10 @@ so `file://` will not do in Chrome:
 - While recording, the bars are a live meter off the microphone. Once there is
   a file, the bars are re-measured from its decoded samples, so the picture and
   the sound are the same data.
+- Room tone is measured off the quiet end of the clip and subtracted, so
+  silence draws flat instead of furry. Buckets are RMS rather than true peak,
+  and the scale comes from the 98th percentile so one stray pop cannot squash
+  everything else.
 - Playback sweeps a real playhead across those bars, scaled by the media
   duration rather than by how long the recording felt.
 - Name and phonetic spelling drive the preview card live; the slug is derived
@@ -40,8 +44,9 @@ so `file://` will not do in Chrome:
 1. **No `mimeType` passed to `MediaRecorder`.** Each engine's own default is
    its best-supported path. Forcing `audio/mp4` produced files that recorded
    but played back as noise.
-2. **Plain `{audio:true}` constraints.** `autoGainControl` rides the gain up
-   through the quiet parts and hands back audible hiss.
+2. **`autoGainControl: false`.** It rides the gain up through the quiet parts
+   and hands back audible hiss. `noiseSuppression` and `echoCancellation` are
+   the opposite — worth asking for explicitly, since engine defaults vary.
 3. **The microphone and the `AudioContext` are released in `onstop`,** not on
    the line after `recorder.stop()`. `stop()` is asynchronous; tearing the
    input down straight after it cuts the final flush off mid-write, which
