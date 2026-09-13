@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SayMyName — say my name, properly</title>
+<meta name="description" content="Record how your name is said. Share it as a link that opens anywhere.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wordmark">SayMyName</div>
+  <p class="tagline">Record how your name is said. Share a link that opens anywhere.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- ── The artifact: what the recipient sees ─────────────────────── -->
+  <section class="card" id="card" aria-label="Preview of your name card">
+    <button class="card-play" id="cardPlay" type="button" aria-label="Play name" disabled>
+      <svg viewBox="0 0 24 24" class="ic-play" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+      <svg viewBox="0 0 24 24" class="ic-stop" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
+    </button>
+    <div class="card-body">
+      <div class="card-name" id="cardName">Your name</div>
+      <div class="card-phonetic" id="cardPhonetic">pro·nun·ci·a·tion</div>
+    </div>
+    <div class="card-url">
+      <span class="card-url-label">Your link will be</span>
+      <span class="card-url-value">saymyname.app/<span id="cardSlug">yourname</span></span>
+    </div>
+  </section>
+
+  <!-- ── The studio ────────────────────────────────────────────────── -->
+  <section class="studio" aria-label="Recorder">
+
+    <canvas id="wave" class="wave" height="120" aria-hidden="true"></canvas>
+
+    <div class="transport">
+      <button class="rec" id="recBtn" type="button">
+        <span class="rec-dot" aria-hidden="true"></span>
+        <span class="rec-label" id="recLabel">Record</span>
+      </button>
+      <div class="timer" id="timer">0:00 <span class="timer-max">/ 0:15</span></div>
+    </div>
+
+    <div class="takes" id="takes" hidden>
+      <button class="ghost" id="playBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+        <span id="playLabel">Play</span>
+      </button>
+      <button class="ghost" id="discardBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M9.5 7V5.5h5V7M8 7l.8 11.2a1.5 1.5 0 0 0 1.5 1.3h3.4a1.5 1.5 0 0 0 1.5-1.3L16 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Discard</span>
+      </button>
+    </div>
+
+    <p class="reassure">
+      Recording stays on your device. Nothing uploads until you publish.
+    </p>
+  </section>
+
+  <!-- ── The details ───────────────────────────────────────────────── -->
+  <section class="fields" aria-label="Your details">
+    <label class="field">
+      <span class="field-label">Name</span>
+      <input id="nameInput" type="text" placeholder="Prantosh Bhattacharyya" autocomplete="name" maxlength="60">
+    </label>
+
+    <label class="field">
+      <span class="field-label">Phonetic spelling <em>optional</em></span>
+      <input id="phoneticInput" type="text" placeholder="PRAHN-tosh bhuh-TAH-char-yuh" maxlength="80">
+    </label>
+
+    <label class="field">
+      <span class="field-label">Link</span>
+      <div class="slug-wrap">
+        <span class="slug-prefix">saymyname.app/</span>
+        <input id="slugInput" type="text" placeholder="yourname" maxlength="40" spellcheck="false" autocapitalize="off">
+      </div>
+    </label>
+  </section>
+
+  <div class="publish-row">
+    <button class="publish" id="publishBtn" type="button" disabled>Publish my link</button>
+  </div>
+
+</main>
+
+<footer class="foot">Nothing on this page leaves your device.</footer>
+
+<!-- ── Publish modal ───────────────────────────────────────────────── -->
+<div class="scrim" id="scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-x" id="modalX" type="button" aria-label="Close">&times;</button>
+    <h2 id="modalTitle">Claim your link</h2>
+    <p class="modal-sub">One account keeps <strong id="modalSlug">saymyname.app/yourname</strong> yours, so you can re-record later.</p>
+
+    <div class="providers">
+      <button class="provider" type="button" data-provider="Apple">Continue with Apple</button>
+      <button class="provider" type="button" data-provider="Google">Continue with Google</button>
+      <button class="provider" type="button" data-provider="Email">Continue with email</button>
+    </div>
+
+    <p class="modal-note">Your recording stays on this device until you publish.</p>
+    <button class="modal-back" id="modalBack" type="button">Not yet — keep listening</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
