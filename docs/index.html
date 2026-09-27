@@ -4,21 +4,172 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Say My Name</title>
-<meta name="description" content="Hear how someone says their name.">
+<meta name="description" content="Record how your name is said, once. Get a link that plays it — in your email signature, Teams, Slack, LinkedIn, or on a badge.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Say My Name">
+<meta property="og:title" content="Say My Name — your name, said the way you say it">
+<meta property="og:description" content="Record it once. Get a link that plays it, anywhere you introduce yourself.">
+<meta property="og:image" content="https://say.tapspent.in/prantosh-bhattacharyya/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%2314203A'/%3E%3Cpath d='M12 9.5v13l10-6.5z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--paper:#EDF1F6;--ink:#14203A;--ink-soft:#6C7B94}
-  @media (prefers-color-scheme:dark){:root{--paper:#0F1626;--ink:#E8EDF5;--ink-soft:#8E9BB2}}
+  :root{
+    --paper:#EDF1F6;--paper-2:#E2E9F2;--ink:#14203A;--ink-soft:#6C7B94;--line:#D5DDE8;
+    --card:#FFFFFF;--well:#F4F7FA;--accent:#2E9C87;--accent-soft:#D8EFEA;--bar:#B9C5D6;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0D1422;--paper-2:#111B2E;--ink:#E8EDF5;--ink-soft:#8E9BB2;--line:#223049;
+      --card:#151F33;--well:#1B263D;--accent:#4FC3AA;--accent-soft:#17362F;--bar:#3A4A66;
+    }
+  }
+  *{box-sizing:border-box}
   html,body{margin:0}
-  body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;
-       background:var(--paper);color:var(--ink);font-family:Georgia,serif;text-align:center}
-  h1{font-weight:400;font-size:34px;margin:0}
-  p{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink-soft);font-size:15px}
+  body{
+    background:radial-gradient(1200px 700px at 50% -15%, var(--paper-2), var(--paper) 60%) fixed, var(--paper);
+    color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.55;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+  .brand{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;font-family:Newsreader,Georgia,serif;font-size:19px}
+  .brand i{width:24px;height:24px;border-radius:50%;background:var(--ink);display:grid;place-items:center}
+  .brand i::after{content:"";border-left:7.5px solid var(--card);border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:2px}
+  .tag{font-size:12px;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+
+  .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:56px 0 72px}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  h1{font-family:Newsreader,Georgia,serif;font-weight:300;font-size:clamp(40px,6.2vw,66px);line-height:1.02;letter-spacing:-0.03em;margin:14px 0 0}
+  h1 em{font-style:italic;font-weight:400}
+  .lede{font-size:18px;color:var(--ink-soft);margin:22px 0 0;max-width:30em}
+
+  .demo{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 24px 22px;
+        box-shadow:0 1px 0 rgba(20,32,58,.03),0 30px 70px -36px rgba(20,32,58,.4)}
+  .demo .k{font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .demo h2{font-family:Newsreader,Georgia,serif;font-weight:400;font-size:34px;line-height:1.08;letter-spacing:-0.02em;margin:8px 0 0}
+  .player{margin-top:20px;display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px;background:var(--well);border:1px solid var(--line);border-radius:18px}
+  .play{flex:none;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--ink);color:var(--card);display:grid;place-items:center;transition:transform .08s,background .15s}
+  .play:active{transform:scale(.95)} .play:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+  .play svg{width:22px;height:22px} .play .pause{display:none}
+  .play.on{background:var(--accent)} .play.on .tri{display:none} .play.on .pause{display:block}
+  .wave{flex:1;min-width:0} .wave svg{display:block;width:100%;height:40px}
+  .wave .base rect{fill:var(--bar)} .wave .done rect{fill:var(--accent)}
+  .demo .open{display:inline-flex;gap:6px;margin-top:16px;font-size:14px;font-weight:500;color:var(--ink);text-decoration:none}
+  .demo .open:hover{color:var(--accent)}
+  .sig{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);font-size:14px;color:var(--ink-soft)}
+  .sig b{color:var(--ink);font-weight:500}
+
+  section{padding:64px 0;border-top:1px solid var(--line)}
+  h3{font-family:Newsreader,Georgia,serif;font-weight:400;font-size:clamp(28px,3.6vw,38px);letter-spacing:-0.02em;margin:0;max-width:18em;line-height:1.12}
+  .sub{color:var(--ink-soft);margin:10px 0 0;max-width:36em}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:32px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 18px}
+  .tile .ic{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-size:19px}
+  .tile h4{margin:14px 0 4px;font-size:15.5px;font-weight:600}
+  .tile p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:32px;counter-reset:s}
+  .step{counter-increment:s}
+  .step::before{content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;
+        border:1px solid var(--line);font-family:Newsreader,Georgia,serif;font-size:18px;background:var(--card)}
+  .step h4{margin:14px 0 4px;font-size:16px;font-weight:600}
+  .step p{margin:0;font-size:14.5px;color:var(--ink-soft)}
+  footer{padding:36px 0 48px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr;gap:36px;padding:28px 0 52px}
+    .grid{grid-template-columns:1fr 1fr}
+    .steps{grid-template-columns:1fr;gap:22px}
+  }
+  @media (max-width:480px){ .grid{grid-template-columns:1fr} .tag{display:none} }
 </style>
 </head>
 <body>
-  <main>
-    <h1>Say My Name</h1>
-    <p>Links here play how someone says their name. This one is a test.</p>
-  </main>
+<div class="wrap">
+  <header>
+    <a class="brand" href="/"><i></i>Say My Name</a>
+    <span class="tag">Prototype</span>
+  </header>
+
+  <div class="hero">
+    <div>
+      <div class="eyebrow">For names people get wrong</div>
+      <h1>Your name, said <em>the way you say it.</em></h1>
+      <p class="lede">Record it once, in your own voice. Get a link that plays it — in your email signature, a Teams or Slack message, your LinkedIn, or on a badge. No app and no account for the person listening.</p>
+    </div>
+
+    <div class="demo">
+      <div class="k">How to say</div>
+      <h2>Prantosh Bhattacharyya</h2>
+      <div class="player">
+        <button class="play" id="play" aria-label="Play an example">
+          <svg class="tri" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.2v13.6L19 12z"/></svg>
+          <svg class="pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
+        </button>
+        <div class="wave" aria-hidden="true">
+          <svg viewBox="0 0 288 44" preserveAspectRatio="none">
+            <defs><clipPath id="cp"><rect id="cpr" x="0" y="0" width="0" height="44"/></clipPath></defs>
+            <g class="base"><rect x="1" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="7" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="13" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="19" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="25" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="31" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="37" y="2.2" width="3.4" height="39.5" rx="1.7"/><rect x="43" y="1.3" width="3.4" height="41.4" rx="1.7"/><rect x="49" y="3.2" width="3.4" height="37.6" rx="1.7"/><rect x="55" y="4.5" width="3.4" height="35.1" rx="1.7"/><rect x="61" y="0.0" width="3.4" height="44.0" rx="1.7"/><rect x="67" y="9.4" width="3.4" height="25.3" rx="1.7"/><rect x="73" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="79" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="85" y="5.7" width="3.4" height="32.6" rx="1.7"/><rect x="91" y="4.9" width="3.4" height="34.3" rx="1.7"/><rect x="97" y="5.5" width="3.4" height="33.1" rx="1.7"/><rect x="103" y="16.8" width="3.4" height="10.3" rx="1.7"/><rect x="109" y="16.3" width="3.4" height="11.4" rx="1.7"/><rect x="115" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="121" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="127" y="19.1" width="3.4" height="5.7" rx="1.7"/><rect x="133" y="15.7" width="3.4" height="12.6" rx="1.7"/><rect x="139" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="145" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="151" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="157" y="7.3" width="3.4" height="29.4" rx="1.7"/><rect x="163" y="6.3" width="3.4" height="31.3" rx="1.7"/><rect x="169" y="15.8" width="3.4" height="12.4" rx="1.7"/><rect x="175" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="181" y="18.0" width="3.4" height="8.1" rx="1.7"/><rect x="187" y="9.5" width="3.4" height="25.0" rx="1.7"/><rect x="193" y="6.8" width="3.4" height="30.5" rx="1.7"/><rect x="199" y="7.2" width="3.4" height="29.6" rx="1.7"/><rect x="205" y="18.4" width="3.4" height="7.3" rx="1.7"/><rect x="211" y="17.1" width="3.4" height="9.7" rx="1.7"/><rect x="217" y="18.7" width="3.4" height="6.5" rx="1.7"/><rect x="223" y="18.2" width="3.4" height="7.5" rx="1.7"/><rect x="229" y="15.7" width="3.4" height="12.7" rx="1.7"/><rect x="235" y="17.5" width="3.4" height="8.9" rx="1.7"/><rect x="241" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="247" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="253" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="259" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="265" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="271" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="277" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="283" y="20.5" width="3.4" height="3.0" rx="1.7"/></g><g class="done" clip-path="url(#cp)"><rect x="1" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="7" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="13" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="19" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="25" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="31" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="37" y="2.2" width="3.4" height="39.5" rx="1.7"/><rect x="43" y="1.3" width="3.4" height="41.4" rx="1.7"/><rect x="49" y="3.2" width="3.4" height="37.6" rx="1.7"/><rect x="55" y="4.5" width="3.4" height="35.1" rx="1.7"/><rect x="61" y="0.0" width="3.4" height="44.0" rx="1.7"/><rect x="67" y="9.4" width="3.4" height="25.3" rx="1.7"/><rect x="73" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="79" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="85" y="5.7" width="3.4" height="32.6" rx="1.7"/><rect x="91" y="4.9" width="3.4" height="34.3" rx="1.7"/><rect x="97" y="5.5" width="3.4" height="33.1" rx="1.7"/><rect x="103" y="16.8" width="3.4" height="10.3" rx="1.7"/><rect x="109" y="16.3" width="3.4" height="11.4" rx="1.7"/><rect x="115" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="121" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="127" y="19.1" width="3.4" height="5.7" rx="1.7"/><rect x="133" y="15.7" width="3.4" height="12.6" rx="1.7"/><rect x="139" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="145" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="151" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="157" y="7.3" width="3.4" height="29.4" rx="1.7"/><rect x="163" y="6.3" width="3.4" height="31.3" rx="1.7"/><rect x="169" y="15.8" width="3.4" height="12.4" rx="1.7"/><rect x="175" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="181" y="18.0" width="3.4" height="8.1" rx="1.7"/><rect x="187" y="9.5" width="3.4" height="25.0" rx="1.7"/><rect x="193" y="6.8" width="3.4" height="30.5" rx="1.7"/><rect x="199" y="7.2" width="3.4" height="29.6" rx="1.7"/><rect x="205" y="18.4" width="3.4" height="7.3" rx="1.7"/><rect x="211" y="17.1" width="3.4" height="9.7" rx="1.7"/><rect x="217" y="18.7" width="3.4" height="6.5" rx="1.7"/><rect x="223" y="18.2" width="3.4" height="7.5" rx="1.7"/><rect x="229" y="15.7" width="3.4" height="12.7" rx="1.7"/><rect x="235" y="17.5" width="3.4" height="8.9" rx="1.7"/><rect x="241" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="247" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="253" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="259" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="265" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="271" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="277" y="20.5" width="3.4" height="3.0" rx="1.7"/><rect x="283" y="20.5" width="3.4" height="3.0" rx="1.7"/></g>
+          </svg>
+        </div>
+      </div>
+      <a class="open" href="/prantosh-bhattacharyya/">Open the card &rarr;</a>
+      <div class="sig">In an email signature it is just this: <b>Prantosh Bhattacharyya</b> <a href="/prantosh-bhattacharyya.m4a" style="text-decoration:none">🔊</a></div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h3>One link, everywhere you introduce yourself.</h3>
+    <p class="sub">Before the call, before the meeting, before anyone has to guess.</p>
+    <div class="grid">
+      <div class="tile"><div class="ic">✉️</div><h4>Email signature</h4><p>A 🔊 after your name. One click and the recording plays.</p></div>
+      <div class="tile"><div class="ic">💬</div><h4>Teams &amp; Slack</h4><p>Type 🔊, select it, add your link — in any message.</p></div>
+      <div class="tile"><div class="ic">in</div><h4>LinkedIn</h4><p>Paste your card link. The preview shows your name and how to say it.</p></div>
+      <div class="tile"><div class="ic">▦</div><h4>Badges &amp; slides</h4><p>A QR code that opens your card on any phone.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h3>Three steps, a minute at most.</h3>
+    <div class="steps">
+      <div class="step"><h4>Record</h4><p>Say your name, as many takes as you like. It stays on your device until you publish.</p></div>
+      <div class="step"><h4>Clean it up</h4><p>Trim to just the name, take out the room noise, level it. Hear before and after.</p></div>
+      <div class="step"><h4>Share</h4><p>You get a card page, a direct audio link, a signature snippet and a QR code.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <span>Say My Name — a prototype.</span>
+    <span>Published recordings can be heard by anyone who has the link.</span>
+  </footer>
+</div>
+
+<audio id="a" src="/prantosh-bhattacharyya.m4a" preload="none"></audio>
+<script>
+(function(){
+  const a = document.getElementById('a'), b = document.getElementById('play'), clip = document.getElementById('cpr');
+  let raf = 0;
+  function draw(){
+    const d = isFinite(a.duration) && a.duration > 0 ? a.duration : 1;
+    clip.setAttribute('width', (Math.min(1, a.currentTime/d) * 288).toFixed(1));
+    if(!a.paused) raf = requestAnimationFrame(draw);
+  }
+  b.addEventListener('click', () => {
+    if(!a.paused){ a.pause(); return; }
+    if(a.ended) a.currentTime = 0;
+    a.play().catch(()=>{});
+  });
+  a.addEventListener('play', () => { b.classList.add('on'); b.setAttribute('aria-label','Pause'); cancelAnimationFrame(raf); draw(); });
+  a.addEventListener('pause', () => { b.classList.remove('on'); b.setAttribute('aria-label','Play an example'); draw(); });
+  a.addEventListener('ended', () => { a.currentTime = 0; draw(); });
+})();
+</script>
 </body>
 </html>
