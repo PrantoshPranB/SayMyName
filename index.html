@@ -252,6 +252,19 @@
   }
   .sigprev a{text-decoration:none;font-size:17px}
   .modal .field{margin-top:16px}
+  .slugrow{
+    display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;
+    background:#F4F7FA;padding-left:13px;font-size:16px;color:var(--ink-soft);overflow:hidden;
+  }
+  .slugrow:focus-within{outline:2px solid var(--ink);outline-offset:-1px;border-color:transparent}
+  .slugrow span{flex:none;white-space:nowrap}
+  .slugrow input{border:none;background:#fff;border-radius:0;padding-left:4px;min-width:0}
+  .slugrow input:focus{outline:none}
+  .copyrow{display:flex;gap:8px}
+  .qrrow{display:flex;gap:16px;align-items:center}
+  .qrrow canvas{width:132px;height:132px;flex:none;border:1px solid var(--line);border-radius:8px;image-rendering:pixelated}
+  .copyrow input{flex:1;min-width:0;font-size:14px;padding:9px 11px;background:#F4F7FA}
+  .copyrow button{flex:none;padding:9px 14px;font-size:14px}
 
   /* ---- lab ---- */
   .lab{margin-top:18px}
@@ -410,23 +423,52 @@
 </div>
 
 <div class="scrim" id="scrim">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
-    <button class="close" id="closeBtn" aria-label="Keep listening">&times;</button>
-    <h2 id="mTitle">Sign in to keep it</h2>
-    <p>Your recording uploads now and gets a permanent link. You can change or delete it any time.</p>
-    <div class="slug" id="slugPrev">sayit.link/<em>your-name</em></div>
-    <div class="oauth">
-      <button>Continue with Google</button>
-      <button>Continue with Apple</button>
-      <button class="quiet" id="keepBtn">Not yet — keep listening</button>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <button class="close" id="closeBtn" aria-label="Close">&times;</button>
+
+    <div id="pubForm">
+      <h2 id="mTitle">Publish your link</h2>
+      <p>Puts the selected part of your take online, with your name and how to say it. Anyone with the link can hear it.</p>
+      <div class="field">
+        <label for="slugIn">Your link</label>
+        <div class="slugrow">
+          <span id="slugHost">your-domain/</span>
+          <input id="slugIn" autocomplete="off" spellcheck="false" autocapitalize="off">
+        </div>
+      </div>
+      <div class="oauth">
+        <button class="primary" id="doPubBtn">Publish</button>
+        <button class="quiet" id="keepBtn">Not yet — keep listening</button>
+      </div>
+      <p class="quietline" id="pubNote" style="margin-top:12px"></p>
+      <p class="quietline" style="margin-top:6px">
+        <button class="linkbtn" id="exportBtn">Download the file instead</button>
+      </p>
     </div>
-    <p class="quietline" style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
-      <strong style="font-weight:500;color:var(--ink)">Testing:</strong> sign-in is not built yet.
-      Download the card instead, then run <code>node publish.js</code> on the file to put it on your domain.
-      It holds exactly the part inside the selection window.
-    </p>
-    <div class="oauth" style="margin-top:10px">
-      <button id="exportBtn">Download for publishing</button>
+
+    <div id="pubDone" hidden>
+      <h2>Published</h2>
+      <p id="pubLive">GitHub puts it online in about a minute. If a link shows a 404, wait a moment and reload.</p>
+
+      <label class="sublabel" for="outSig">1 · Email signature — a 🔊 that plays on click. Paste into the Outlook signature editor.</label>
+      <textarea id="outSig" readonly rows="3" spellcheck="false"></textarea>
+      <div class="copyrow" style="margin-top:8px"><button data-copy="outSig" style="flex:1">Copy the signature</button></div>
+
+      <label class="sublabel" for="outPage">2 · Card page — for profiles, LinkedIn and messages. Shows a preview with your name.</label>
+      <div class="copyrow"><input id="outPage" readonly><button data-copy="outPage">Copy</button></div>
+
+      <label class="sublabel" for="outAudio">3 · Audio link — plays as soon as it is clicked. In Teams or Slack, type 🔊, select it, add this link.</label>
+      <div class="copyrow"><input id="outAudio" readonly><button data-copy="outAudio">Copy</button></div>
+
+      <span class="sublabel">4 · QR code — for badges, slides and CVs. Opens the card page.</span>
+      <div class="qrrow">
+        <canvas id="qrCanvas" width="264" height="264" aria-label="QR code for the card page"></canvas>
+        <div class="oauth" style="margin:0;flex:1">
+          <button id="qrSaveBtn">Download the QR code</button>
+          <button id="openCardBtn">Open the card</button>
+          <button class="quiet" id="pubClose">Done</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1558,36 +1600,147 @@
       : 'Deleted. Nothing was ever uploaded.');
   });
 
-  pubBtn.addEventListener('click', ()=>{
-    const slug = nameIn.value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    $('slugPrev').innerHTML = 'sayit.link/' + (slug || '<em>your-name</em>');
-    scrim.classList.add('on');
-    $('closeBtn').focus();
-  });
+  /* ---- publish ---------------------------------------------------------- */
 
-  // One file carries everything publish.js needs: the name, how to say it, and
-  // the audio as a WAV of exactly the selected window — so what gets published
-  // is what the Play button played, whatever format the browser recorded in.
-  $('exportBtn').addEventListener('click', ()=>{
-    if(!take) return;
+  // serve.js answers /api/config with the domain it publishes to. Anything
+  // else serving the page (a plain static server) cannot publish, and the
+  // window says so and offers the download instead.
+  let pubHost = null;
+  fetch('/api/config').then(r => r.ok ? r.json() : null)
+    .then(j => { if(j && j.domain){ pubHost = j.domain; $('baseIn').value = 'https://'+pubHost; } })
+    .catch(()=>{});
+
+  const slugIn = $('slugIn'), doPubBtn = $('doPubBtn'), pubNote = $('pubNote');
+  const cleanSlug = v => v.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+/,'');
+
+  // The name, how to say it, and a WAV of exactly the selected window — so
+  // what is published is what the Play button played, whatever the browser
+  // recorded in.
+  function selectionJob(){
     const b = take.buffer, total = b.length;
     const s0 = Math.max(0, Math.floor(selA*total));
     const s1 = Math.min(total, Math.ceil(selB*total));
     const wav = encodeWAV(b.getChannelData(0).slice(s0, s1), b.sampleRate);
-    const r = new FileReader();
-    r.onload = ()=>{
-      const job = {
-        slug: slugOf(), name: nameIn.value.trim(), phonetic: phonIn.value.trim(),
+    return new Promise((resolve, reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve({
+        slug: slugIn.value.replace(/-+$/,'') || slugOf(),
+        name: nameIn.value.trim(), phonetic: phonIn.value.trim(),
         audio: String(r.result).split(',')[1], audioType: 'audio/wav'
-      };
-      const url = URL.createObjectURL(new Blob([JSON.stringify(job)], {type:'application/json'}));
-      const a = document.createElement('a');
-      a.href = url; a.download = job.slug + '.saymyname.json';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 10000);
-      toast('Saved '+a.download+'. Now run: node publish.js ~/Downloads/'+a.download);
-    };
-    r.readAsDataURL(wav);
+      });
+      r.onerror = ()=> reject(r.error);
+      r.readAsDataURL(wav);
+    });
+  }
+
+  function showPubForm(){
+    $('pubForm').hidden = false; $('pubDone').hidden = true;
+    doPubBtn.textContent = 'Publish';
+    doPubBtn.disabled = !pubHost || !slugIn.value.replace(/-+$/,'');
+    $('slugHost').textContent = (pubHost || 'your-domain') + '/';
+    pubNote.textContent = pubHost ? ''
+      : 'Publishing needs the studio\'s own server. Stop this one and run ./serve.sh, then reload.';
+  }
+
+  pubBtn.addEventListener('click', ()=>{
+    slugIn.value = slugOf();
+    showPubForm();
+    scrim.classList.add('on');
+    slugIn.focus();
+  });
+
+  slugIn.addEventListener('input', ()=>{
+    const at = slugIn.selectionStart, before = slugIn.value;
+    slugIn.value = cleanSlug(before);
+    if(slugIn.value !== before) slugIn.setSelectionRange(at-1, at-1);
+    showPubForm();
+  });
+  slugIn.addEventListener('keydown', e => { if(e.key==='Enter' && !doPubBtn.disabled) doPubBtn.click(); });
+
+  doPubBtn.addEventListener('click', async ()=>{
+    if(!take || !pubHost) return;
+    doPubBtn.disabled = true; doPubBtn.textContent = 'Publishing…';
+    pubNote.textContent = 'Encoding the audio, drawing the preview card, pushing to GitHub. About 10 seconds.';
+    try{
+      const r = await fetch('/api/publish', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(await selectionJob())
+      });
+      const out = await r.json();
+      if(!r.ok) throw new Error(out.error || 'HTTP '+r.status);
+
+      $('outPage').value = out.page;
+      $('outAudio').value = out.audio;
+      $('outSig').value = out.signature;
+      $('pubLive').textContent = out.pushed
+        ? 'GitHub puts it online in about a minute. If a link shows a 404, wait a moment and reload.'
+        : 'This is identical to what is already published, so nothing new was pushed. The links are live.';
+      $('pubForm').hidden = true; $('pubDone').hidden = false;
+      drawQR(out.page);
+      $('pubClose').focus();
+    }catch(e){
+      pubNote.textContent = 'Could not publish: ' + e.message;
+      doPubBtn.textContent = 'Try again'; doPubBtn.disabled = false;
+    }
+  });
+
+  document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', async ()=>{
+    const el = $(btn.dataset.copy);
+    try{ await navigator.clipboard.writeText(el.value); }
+    catch(e){ el.select(); try{ document.execCommand('copy'); }catch(e2){} }
+    toast('Copied.');
+  }));
+  // The QR encoder is loaded only when a card has been published: nothing else
+  // on the page needs it.
+  function loadQR(){
+    if(window.qrcode) return Promise.resolve();
+    return new Promise((resolve, reject)=>{
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+      sc.onload = resolve; sc.onerror = ()=> reject(new Error('QR library did not load'));
+      document.head.appendChild(sc);
+    });
+  }
+
+  // Drawn big and sharp (a 4-module quiet zone, whole pixels per module) so the
+  // downloaded PNG prints cleanly on a badge. Level M survives a scuffed print.
+  async function drawQR(text){
+    const c = $('qrCanvas'), x = c.getContext('2d');
+    try{
+      await loadQR();
+      const q = qrcode(0, 'M'); q.addData(text); q.make();
+      const n = q.getModuleCount(), cell = Math.max(4, Math.floor(1024/(n+8)));
+      c.width = c.height = (n+8)*cell;
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      x.fillStyle = '#14203A';
+      for(let r=0;r<n;r++) for(let k=0;k<n;k++) if(q.isDark(r,k)) x.fillRect((k+4)*cell, (r+4)*cell, cell, cell);
+      $('qrSaveBtn').disabled = false;
+    }catch(e){
+      x.clearRect(0, 0, c.width, c.height);
+      $('qrSaveBtn').disabled = true;
+      toast('Could not draw the QR code: ' + e.message);
+    }
+  }
+
+  $('qrSaveBtn').addEventListener('click', ()=>{
+    const a = document.createElement('a');
+    a.href = $('qrCanvas').toDataURL('image/png');
+    a.download = (slugIn.value.replace(/-+$/,'') || 'card') + '-qr.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  $('openCardBtn').addEventListener('click', ()=> window.open($('outPage').value, '_blank', 'noopener'));
+  $('pubClose').addEventListener('click', ()=> dismiss());
+
+  $('exportBtn').addEventListener('click', async ()=>{
+    if(!take) return;
+    const job = await selectionJob();
+    const url = URL.createObjectURL(new Blob([JSON.stringify(job)], {type:'application/json'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = job.slug + '.saymyname.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 10000);
+    toast('Saved '+a.download+'. Publish it with: node publish.js ~/Downloads/'+a.download);
   });
 
   function dismiss(){ scrim.classList.remove('on'); pubBtn.focus(); }
