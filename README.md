@@ -37,7 +37,33 @@ so `file://` will not do in Chrome:
   duration rather than by how long the recording felt.
 - Name and phonetic spelling drive the preview card live; the slug is derived
   from the name at publish time.
+- A draggable selection window over the wave, defaulting to the detected
+  speech — which is what drops the click a microphone makes as it opens.
+- **Clean up** (marked Pro) trims to the window, high-passes the rumble out,
+  gates the room tone, lifts presence and levels the result. It toggles against
+  **Original**, and the cleaned take is cached so that flip is instant: hearing
+  the two against each other is the pitch, so it must not stall.
+- **Signature** emits a speaker-emoji link for an Outlook signature. It points
+  at the audio file rather than a page, because browsers autoplay a media file
+  opened at the top level but refuse to autoplay a page — verified in Chrome.
 - **Discard** clears the take and says so.
+- **Lab** (testing only):
+  - *Hear it like you do* — a playback-only filter (low shelf up, highs down)
+    approximating the bone-conducted voice its owner hears. Never applied to
+    what is published: listeners have only ever heard the air-conducted voice.
+  - *Say it in another voice* — ElevenLabs speech-to-speech
+    (`eleven_multilingual_sts_v2`) on the selected clip. It keeps the
+    pronunciation and swaps the voice. The API key sits in `localStorage` and
+    is sent from the page, which is acceptable on localhost only; a public
+    build must proxy this through a server. Speech-to-speech, never
+    text-to-speech: a TTS voice mispronounces exactly the names this is for.
+
+## The paid line
+
+Recording, the selection window, and the signature snippet are free. Clean up
+is the Pro feature. There is no payment path yet, so it runs and then says what
+it is — the Original/Clean up toggle is the demonstration, and gating it would
+throw that away before anyone has heard the difference.
 
 ## Four things that make recording work, and are easy to undo by accident
 
@@ -55,11 +81,29 @@ so `file://` will not do in Chrome:
    prompt can cost the user-gesture context, and a suspended `AudioContext`
    makes the analyser read pure silence.
 
+## Test publishing (GitHub Pages)
+
+Until upload exists, publishing is a manual step on this machine (macOS):
+
+1. In the studio, Publish → **Download for publishing**. That saves
+   `<slug>.saymyname.json`: name, phonetic spelling, and the selected window
+   as a WAV.
+2. `node publish.js ~/Downloads/<slug>.saymyname.json` writes into `docs/`:
+   `<slug>.m4a` (AAC, ~20 KB), `<slug>/index.html` (the card, with Open Graph
+   tags) and `<slug>/card.png` (the preview image, rendered by headless Chrome).
+3. Commit and push. GitHub Pages serves `docs/` on the domain in `docs/CNAME`.
+
+Link to `<slug>.m4a` where a click should play at once (the signature 🔊);
+link to `<slug>/` where a preview card helps (messages, profiles).
+
 ## What is deliberately not built
 
 - **Upload.** Publish opens the sign-in modal and stops there. Nothing leaves
   the device.
-- Accounts, slug availability checks, bot protection, the public card page.
+- Accounts, payment, slug availability checks, bot protection, the card page.
+- Transcoding. Clean up emits WAV, around 220 KB for two seconds. Browsers
+  cannot encode MP3 or AAC natively, so publishing needs an encoder in the page
+  or a transcode on upload to reach the ~25 KB the format deserves.
 - Persistence. The take lives in memory only, so a refresh loses it. IndexedDB
   is the fix, but it is deliberately absent while recording is being tuned —
   restored state makes it much harder to tell a fresh bug from a stale take.

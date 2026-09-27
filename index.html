@@ -15,6 +15,7 @@
     --line:#CFD8E4;
     --rec:#D8305F;
     --live:#2E9C87;
+    --pro:#8A6224;
     --card:#FFFFFF;
     --radius:14px;
   }
@@ -81,7 +82,8 @@
   /* ---- waveform ---- */
   .wave-slot{
     margin-top:20px;
-    height:64px;
+    height:78px;
+    touch-action:none;
     border-radius:9px;
     background:#F4F7FA;
     border:1px solid var(--line);
@@ -108,6 +110,37 @@
   }
   .timer.on{opacity:1}
   .timer.done{color:var(--ink-soft)}
+
+  .selinfo{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-top:8px;font-size:12.5px;color:var(--ink-soft);
+    font-variant-numeric:tabular-nums;
+  }
+  .selinfo[hidden]{display:none}
+  .linkbtn{
+    border:none;background:none;padding:2px 0;
+    color:var(--ink);font-size:12.5px;text-decoration:underline;
+    text-underline-offset:2px;cursor:pointer;flex:none;
+  }
+  .linkbtn:hover{background:none;color:var(--live)}
+  .linkbtn[hidden]{display:none}
+  #enhanceBtn.on{border-color:var(--live);color:var(--live)}
+  .pro{
+    display:inline-block;
+    margin-left:7px;
+    font-size:9px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--pro);background:#FBF4E9;
+    border:1px solid #E7D6BB;border-radius:4px;
+    padding:2px 4px 1px;
+    vertical-align:1.5px;line-height:1.2;
+  }
+  .pro[hidden]{display:none}
+  .upsell{
+    margin:14px 0 0;font-size:13px;color:var(--ink-soft);line-height:1.5;
+  }
+  .upsell .pro{margin-left:0;margin-right:6px}
+  .upsell strong{color:var(--ink);font-weight:500}
+  .upsell[hidden]{display:none}
 
   /* ---- controls ---- */
   .row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
@@ -200,6 +233,53 @@
     padding:11px 13px;margin-top:16px;word-break:break-all;
   }
   .slug em{font-style:normal;color:var(--ink-soft)}
+  .modal.wide{max-width:470px;max-height:90vh;overflow-y:auto}
+  .sublabel{
+    display:block;margin:16px 0 6px;
+    font-size:12.5px;color:var(--ink-soft);
+  }
+  .modal textarea{
+    width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px;line-height:1.5;color:var(--ink);
+    padding:10px 12px;border:1px solid var(--line);border-radius:9px;
+    background:#F4F7FA;resize:vertical;
+  }
+  .modal textarea:focus{outline:2px solid var(--ink);outline-offset:-1px}
+  .sigprev{
+    margin-top:16px;padding:14px;
+    border:1px dashed var(--line);border-radius:9px;
+    background:#fff;font-size:15px;
+  }
+  .sigprev a{text-decoration:none;font-size:17px}
+  .modal .field{margin-top:16px}
+
+  /* ---- lab ---- */
+  .lab{margin-top:18px}
+  .lab-head{
+    font-family:Newsreader,Georgia,serif;font-size:22px;font-weight:400;
+    letter-spacing:-0.015em;display:flex;align-items:center;gap:10px;
+  }
+  .lab-tag{
+    font-family:Inter,sans-serif;font-size:10px;font-weight:600;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);
+    border:1px solid var(--line);border-radius:4px;padding:2px 5px 1px;
+  }
+  .lab-sub{font-weight:500;font-size:15px;margin-top:22px}
+  .quietline{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:4px 0 0}
+  .inline{display:flex;gap:8px}
+  .inline input,.inline select{flex:1;min-width:0}
+  .inline button{flex:none}
+  select{
+    width:100%;font-family:inherit;font-size:16px;color:var(--ink);
+    padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;
+  }
+  select:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:transparent}
+  #useVoiceBtn.on,#useIsoBtn.on{background:#fff;color:var(--live);border-color:var(--live)}
+  #labStatus:empty,#isoStatus:empty{display:none}
+  input[type=range]{padding:0;border:none;background:none;accent-color:var(--live);height:24px}
+  input[type=range]:focus{outline:none}
+  input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .amt{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);margin-top:-2px}
 </style>
 </head>
 <body>
@@ -221,24 +301,36 @@
       <div class="timer" id="timer">0.0s</div>
     </div>
 
+    <div class="selinfo" id="selInfo" hidden>
+      <span id="selText">&nbsp;</span>
+      <button class="linkbtn" id="fullBtn" hidden>Use full clip</button>
+    </div>
+
     <div class="row" id="controls">
       <button class="rec" id="recBtn"><span class="dot"></span><span id="recLabel">Record</span></button>
-      <button id="playBtn" disabled>Play</button>
+      <button id="playBtn" data-label="Play" disabled>Play</button>
+      <button id="enhanceBtn" disabled><span id="enhanceLabel">Clean up</span><span class="pro" id="enhancePro">Pro</span></button>
       <button class="danger" id="discardBtn" disabled>Discard</button>
     </div>
 
     <div class="field">
       <label for="nameIn">Name</label>
-      <input id="nameIn" placeholder="Prantosh" autocomplete="off">
+      <input id="nameIn" placeholder="John Nguyen" autocomplete="off">
     </div>
     <div class="field">
       <label for="phonIn">How to say it (optional)</label>
-      <input id="phonIn" placeholder="PRAWN-toshe" autocomplete="off">
+      <input id="phonIn" placeholder="JON win" autocomplete="off">
     </div>
 
     <div class="row">
       <button class="primary" id="pubBtn" disabled>Publish</button>
+      <button id="sigBtn" disabled>Signature</button>
     </div>
+
+    <p class="upsell" id="upsell" hidden>
+      <span class="pro">Pro</span> Clean up is part of Pro — free while this is a prototype.
+      Flip between <strong>Original</strong> and <strong>Clean up</strong> to hear what it does.
+    </p>
 
     <div class="assure">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -248,7 +340,73 @@
     </div>
   </div>
 
-  <p class="note">Prototype. Recording and playback are real; publishing is stubbed out.</p>
+  <section class="card lab" aria-labelledby="labTitle">
+    <div class="lab-head" id="labTitle">Lab <span class="lab-tag">Testing only</span></div>
+
+    <div class="lab-sub" style="margin-top:16px">Hear it like you do</div>
+    <p class="quietline">Your voice reaches you partly through your skull, which carries the low end, so a recording sounds thin to you. Play the two one after the other. Headphones make the difference clearest. Only for listening here — what you publish stays as others hear you.</p>
+    <div class="row">
+      <button id="asOthersBtn" data-label="&#9654; As others hear you" disabled>&#9654; As others hear you</button>
+      <button id="asYouBtn" data-label="&#9654; As you hear yourself" disabled>&#9654; As you hear yourself</button>
+    </div>
+    <div class="field">
+      <label for="selfAmt">How much — more bass, less treble <span id="selfAmtOut"></span></label>
+      <input type="range" id="selfAmt" min="0" max="100" value="60">
+      <div class="amt"><span>Off</span><span>Strong</span></div>
+    </div>
+
+    <div class="lab-sub">ElevenLabs</div>
+    <div class="field" style="margin-top:8px">
+      <label for="keyIn">API key</label>
+      <div class="inline">
+        <input id="keyIn" type="password" placeholder="Paste your key — voices load by themselves" autocomplete="off" spellcheck="false" autocapitalize="off">
+        <button id="forgetKeyBtn">Forget</button>
+      </div>
+    </div>
+
+    <div class="lab-sub">Studio clean-up</div>
+    <p class="quietline">ElevenLabs' Voice Isolator takes out background noise, echo and hum much harder than Clean up can on this device. It works on the selected part of the take and uses your credits. The key needs the Voice Isolator permission. Once you use the isolated take, Clean up and voice conversion work on top of it.</p>
+    <div class="row">
+      <button class="primary" id="isoBtn" disabled>Isolate my voice</button>
+    </div>
+    <div id="isoOut" hidden>
+      <div class="row">
+        <button id="playIsoBtn" data-label="&#9654; Isolated">&#9654; Isolated</button>
+        <button id="playPreIsoBtn" data-label="&#9654; Before">&#9654; Before</button>
+      </div>
+      <div class="row">
+        <button id="useIsoBtn">Use the isolated take</button>
+      </div>
+    </div>
+    <p class="quietline" id="isoStatus" role="status"></p>
+
+    <div class="lab-sub">Say it in another voice</div>
+    <p class="quietline">ElevenLabs keeps how you said it — the sounds, the stress, the timing — and swaps whose voice it is. It converts the selected part of the take and uses your credits. The key needs the Voices (read) and Speech to Speech permissions.</p>
+
+    <div class="field">
+      <label for="voiceSel">Voice</label>
+      <div class="inline">
+        <select id="voiceSel" disabled><option value="">Load your voices first</option></select>
+        <button id="loadVoicesBtn">Load voices</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="primary" id="voiceBtn" disabled>Convert to this voice</button>
+    </div>
+    <div id="voiceOut" hidden>
+      <div class="row">
+        <button id="playAiBtn" data-label="&#9654; AI voice">&#9654; AI voice</button>
+        <button id="playMineBtn" data-label="&#9654; My voice">&#9654; My voice</button>
+      </div>
+      <div class="row">
+        <button id="useVoiceBtn">Use the AI voice for my link</button>
+      </div>
+    </div>
+    <p class="quietline" id="labStatus" role="status"></p>
+    <p class="quietline" style="margin-top:14px">The key is kept in this browser only and sent straight to ElevenLabs. Isolating or converting uploads the selected clip to ElevenLabs. Fine on localhost; a public version must make this call from a server so the key is never in the page.</p>
+  </section>
+
+  <p class="note">Prototype. Recording, trimming and cleaning up are real and run on this device. The Lab's voice conversion sends the clip to ElevenLabs. Publishing is stubbed out.</p>
 </div>
 
 <div class="scrim" id="scrim">
@@ -262,6 +420,42 @@
       <button>Continue with Apple</button>
       <button class="quiet" id="keepBtn">Not yet — keep listening</button>
     </div>
+    <p class="quietline" style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+      <strong style="font-weight:500;color:var(--ink)">Testing:</strong> sign-in is not built yet.
+      Download the card instead, then run <code>node publish.js</code> on the file to put it on your domain.
+      It holds exactly the part inside the selection window.
+    </p>
+    <div class="oauth" style="margin-top:10px">
+      <button id="exportBtn">Download for publishing</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="sigScrim">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
+    <button class="close" id="sigClose" aria-label="Close">&times;</button>
+    <h2 id="sigTitle">Put it in your signature</h2>
+    <p>A speaker your reader can click. It opens the audio file itself rather than a page, and browsers start playing a file like that on their own — so there is nothing to load and nothing to tap.</p>
+
+    <div class="field">
+      <label for="baseIn">Where the file will live</label>
+      <input id="baseIn" value="http://localhost:8000" spellcheck="false" autocapitalize="off">
+    </div>
+
+    <div class="sigprev" id="sigPrev"></div>
+
+    <label class="sublabel" for="sigHtml">HTML, for the Outlook signature editor</label>
+    <textarea id="sigHtml" readonly rows="3" spellcheck="false"></textarea>
+
+    <label class="sublabel" for="sigUrl">Plain link, for Teams, LinkedIn or a QR code</label>
+    <textarea id="sigUrl" readonly rows="2" spellcheck="false"></textarea>
+
+    <div class="oauth">
+      <button id="copyHtmlBtn">Copy the HTML</button>
+      <button id="saveAudioBtn">Save the audio file</button>
+      <button class="quiet" id="sigDone">Done</button>
+    </div>
+    <p class="modal-note" id="sigNote"></p>
   </div>
 </div>
 
@@ -271,27 +465,59 @@
 (function(){
   const $ = id => document.getElementById(id);
   const recBtn=$('recBtn'), recLabel=$('recLabel'), playBtn=$('playBtn'),
-        discardBtn=$('discardBtn'), pubBtn=$('pubBtn'), nameIn=$('nameIn'),
-        phonIn=$('phonIn'), cardName=$('cardName'), cardPhon=$('cardPhon'),
+        enhanceBtn=$('enhanceBtn'), enhanceLabel=$('enhanceLabel'),
+        enhancePro=$('enhancePro'), upsell=$('upsell'),
+        discardBtn=$('discardBtn'), pubBtn=$('pubBtn'),
+        sigBtn=$('sigBtn'), nameIn=$('nameIn'), phonIn=$('phonIn'),
+        cardName=$('cardName'), cardPhon=$('cardPhon'),
         canvas=$('wave'), hint=$('waveHint'), timer=$('timer'),
-        scrim=$('scrim'), toastEl=$('toast');
+        selInfo=$('selInfo'), selText=$('selText'), fullBtn=$('fullBtn'),
+        scrim=$('scrim'), toastEl=$('toast'),
+        asOthersBtn=$('asOthersBtn'), asYouBtn=$('asYouBtn'),
+        keyIn=$('keyIn'), voiceSel=$('voiceSel'), loadVoicesBtn=$('loadVoicesBtn'),
+        voiceBtn=$('voiceBtn'), labStatus=$('labStatus'), voiceOut=$('voiceOut'),
+        playAiBtn=$('playAiBtn'), playMineBtn=$('playMineBtn'), useVoiceBtn=$('useVoiceBtn'),
+        isoBtn=$('isoBtn'), isoOut=$('isoOut'), isoStatus=$('isoStatus'),
+        playIsoBtn=$('playIsoBtn'), playPreIsoBtn=$('playPreIsoBtn'), useIsoBtn=$('useIsoBtn');
 
+  const slot = canvas.parentElement;
   const ctx = canvas.getContext('2d');
-  const CAP_S = 15, BARW = 3, GAP = 2;
+  const CAP_S = 15, BARW = 3, GAP = 2, MIN_SEL_S = 0.12, GRAB_PX = 14;
 
-  let media, recorder, chunks=[], blob=null, url=null, audio=null;
-  let audioCtx, analyser, raf, playRaf, startAt=0, wallS=0;
-  let peaks=[], duration=0, playing=false;
+  let media, recorder, chunks=[], audioCtx, analyser, raf, playRaf, startAt=0, wallS=0;
+  let livePeaks=[], micLive=false, micAt=0;
+  let ac=null, srcNode=null, headStartedAt=0, headOffset=0;
+  let take=null;        // {blob,buffer,peaks,duration} — what plays and publishes
+  let origin=null;      // the take as recorded, kept so Enhance can be undone
+  let originSel=[0,1];
+  let selA=0, selB=1, enhanced=false, playing=false, busy=false;
+  // the cleaned result is kept, so flipping Original <-> Clean up is instant
+  // rather than a re-render each time; that flip is the whole demonstration
+  let cleanTake=null, cleanSel=null, everCleaned=false;
+  // Lab: the take in another voice. Conversion costs credits, so the result is
+  // cached against exactly what was sent, and flipping back to it is free.
+  let voiced=false, voiceTake=null, voiceKey='', voiceSrc=null, beforeVoice=null, sentAway=false, converting=false;
+  // Several buttons can play. Whichever started it shows Stop; the playhead is
+  // drawn only when what is playing is the take the waveform shows.
+  let activeBtn=null, headShown=false;
+  // Lab: the take through ElevenLabs' isolator. Using it makes it the original,
+  // so Clean up and conversion build on it; preIso is how to get back.
+  let isoTake=null, isoSrc=null, isoKey='', isoUsed=false, preIso=null, isolating=false;
 
   function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
-  /* ---- drawing ---------------------------------------------------- */
+  function playCtx(){
+    if(!ac || ac.state==='closed') ac = new (window.AudioContext||window.webkitAudioContext)();
+    return ac;
+  }
+
+  /* ---- drawing ------------------------------------------------------ */
 
   function fit(){
     const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio||1;
     canvas.width = r.width*d; canvas.height = r.height*d;
     ctx.setTransform(d,0,0,d,0,0);
-    redraw();
+    paint();
   }
   window.addEventListener('resize', fit);
 
@@ -300,9 +526,9 @@
     else ctx.fillRect(x,y,w,h);
   }
 
-  // progress < 0 draws every bar in baseColor; otherwise bars left of the
-  // playhead are drawn in --live, so the sweep tracks the audio.
-  function bars(data, baseColor, progress){
+  // progress < 0 draws no playhead. Bars outside the selection are drawn faint,
+  // so the window reads as the part of the clip that counts.
+  function bars(data, baseColor, progress, showSel){
     const w = canvas.clientWidth, h = canvas.clientHeight;
     ctx.clearRect(0,0,w,h);
     if(!data.length) return;
@@ -310,67 +536,80 @@
     const n = Math.max(1, Math.floor(w/(BARW+GAP)));
     const step = data.length/n;
     const playedTo = progress >= 0 ? progress*n : -1;
-    const live = css('--live');
+    const live = css('--live'), faint = css('--line');
 
     for(let i=0;i<n;i++){
-      // max across the slice, so a short peak is never sampled past
       let v=0;
       const a=Math.floor(i*step), b=Math.max(a+1, Math.floor((i+1)*step));
       for(let j=a;j<b && j<data.length;j++) if(data[j]>v) v=data[j];
 
-      const bh = Math.max(2, Math.min(h-8, v*(h-8)));
-      ctx.fillStyle = i < playedTo ? live : baseColor;
+      const frac = (i+0.5)/n;
+      const inSel = !showSel || (frac>=selA && frac<=selB);
+      const bh = Math.max(2, Math.min(h-10, v*(h-10)));
+      ctx.fillStyle = !inSel ? faint : (i < playedTo ? live : baseColor);
       rounded(i*(BARW+GAP)+1, (h-bh)/2, BARW, bh, 1.5);
+    }
+
+    if(showSel && (selA>0 || selB<1)){
+      // A wash over what is excluded, so it never reads as part of the clip.
+      // Faint bars alone were too easy to mistake for quiet audio that ought
+      // to be playing, which makes the sound look like it does not match.
+      ctx.fillStyle = 'rgba(244,247,250,.72)';
+      if(selA > 0) ctx.fillRect(0, 0, selA*w, h);
+      if(selB < 1) ctx.fillRect(selB*w, 0, w - selB*w, h);
+      handles(w,h);
     }
   }
 
-  function redraw(){
-    if(!peaks.length) return;
-    if(recorder && recorder.state==='recording') bars(peaks, css('--rec'), -1);
-    else if(playing) sweep();
-    else bars(peaks, css('--ink-soft'), -1);
+  function handles(w,h){
+    ctx.fillStyle = css('--ink');
+    for(const f of [selA, selB]){
+      const x = Math.max(1, Math.min(w-3, f*w - 1));
+      ctx.fillRect(x, 4, 2, h-8);
+      rounded(x-2, h/2-9, 6, 18, 3);
+    }
+  }
+
+  // Draws one frame and never schedules another, so a resize mid-playback
+  // cannot leave a second animation loop running behind the first.
+  function paint(){
+    if(recorder && recorder.state==='recording'){ bars(livePeaks, css('--rec'), -1, false); return; }
+    if(!take){ ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight); return; }
+    bars(take.peaks, css('--ink-soft'), playing && headShown ? headFrac() : -1, true);
   }
 
   function clearCanvas(){ ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight); }
 
-  /* ---- measuring the take itself ---------------------------------- */
+  /* ---- measuring ----------------------------------------------------- */
 
-  // The bars drawn while recording come from the live mic — a meter, drawn on
-  // a wall clock. Once there is a file, measure that instead, so the picture
-  // and the sound are the same data.
-  async function measure(b){
-    let ac;
-    try{
-      ac = new (window.AudioContext||window.webkitAudioContext)();
-      const bytes = await b.arrayBuffer();
-      const decoded = await new Promise((res,rej)=>{
+  function decode(b){
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    return b.arrayBuffer()
+      .then(bytes => new Promise((res,rej)=>{
         const maybe = ac.decodeAudioData(bytes, res, rej);   // older Safari is callback-only
         if(maybe && maybe.then) maybe.then(res,rej);
-      });
-      const ch = decoded.getChannelData(0);
-      const n = 600;
-      const per = Math.max(1, Math.floor(ch.length/n));
-      const out = new Array(n);
-      // RMS per bucket, not true peak. These bars are a loudness display, so a
-      // single-sample click should not tower over a spoken syllable — true
-      // peak is most of what made the shape look furry.
-      for(let i=0;i<n;i++){
-        let sum=0;
-        const s=i*per, e=Math.min(ch.length, s+per);
-        for(let j=s;j<e;j++){ const v=ch[j]; sum += v*v; }
-        out[i] = Math.sqrt(sum/Math.max(1, e-s));
-      }
-      return { peaks: shape(out), duration: decoded.duration };
-    }catch(e){
-      return null;
-    }finally{
-      if(ac && ac.state!=='closed') ac.close();
-    }
+      }))
+      .then(d => { if(ac.state!=='closed') ac.close(); return d; },
+            e => { if(ac.state!=='closed') ac.close(); throw e; });
   }
 
-  // Room tone lands as a low, near-constant band under every bucket. Measure
-  // it off the quiet end of the clip and subtract it, so silence draws flat
-  // and what is left is the speech.
+  // RMS per bucket, not true peak: these bars are a loudness display, so a
+  // single-sample click should not tower over a spoken syllable. Bucket bounds
+  // are computed from the exact length, so the bars span the whole clip and
+  // not merely the first floor(len/600)*600 samples of it.
+  function peaksFrom(ch){
+    const n = 600, out = new Array(n);
+    for(let i=0;i<n;i++){
+      const s = Math.floor(i*ch.length/n), e = Math.max(s+1, Math.floor((i+1)*ch.length/n));
+      let sum=0;
+      for(let j=s;j<e && j<ch.length;j++){ const v=ch[j]; sum += v*v; }
+      out[i] = Math.sqrt(sum/Math.max(1, Math.min(e,ch.length)-s));
+    }
+    return shape(out);
+  }
+
+  // Room tone lands as a low, near-constant band under every bucket. Measure it
+  // off the quiet end of the clip and subtract it, so silence draws flat.
   function shape(raw){
     const sorted = [...raw].sort((a,b)=>a-b);
     const at = q => sorted[Math.min(sorted.length-1, Math.floor(sorted.length*q))];
@@ -383,35 +622,238 @@
     const span = Math.max(1e-6, ceiling - gate);
 
     const lifted = raw.map(v =>
-      Math.pow(Math.min(1, Math.max(0, v - gate)/span), 0.65));  // lift mid-level speech
+      Math.pow(Math.min(1, Math.max(0, v - gate)/span), 0.65));
 
-    // 3-tap smoothing: takes the jitter off without flattening the attacks
     return lifted.map((v,i,a) => {
       const prev = i>0 ? a[i-1] : v, next = i<a.length-1 ? a[i+1] : v;
       return (prev + 2*v + next)/4;
     });
   }
 
-  /* ---- recording --------------------------------------------------- */
+  // Where the speech is, skipping the click a microphone commonly emits in the
+  // first moments after the stream opens.
+  //
+  // Two thresholds, not one. A single threshold high enough to ignore room tone
+  // is also high enough to cut the quiet ends of a word — the breath before the
+  // first consonant, and trailing fricatives like the "-sh" of Prantosh, which
+  // sit 15-20dB under the vowel and carry the pronunciation you are recording.
+  // So: find the loud cores, then grow them outwards through anything still
+  // above a much lower floor.
+  function detectSpeech(peaks, duration){
+    const n = peaks.length, perS = duration/n;
+    // EDGE can sit this low because shape() has already subtracted the room
+    // tone and floored it at zero, so a bar only exceeds 0 when there is
+    // something above the noise. A higher edge was a coin flip on a quiet
+    // trailing fricative.
+    const CORE = 0.18, EDGE = 0.03;
+
+    const runs = [];
+    for(let i=0;i<n;){
+      if(peaks[i] > CORE){
+        let j=i; while(j<n && peaks[j] > CORE) j++;
+        runs.push([i,j]); i=j;
+      } else i++;
+    }
+    const isOpening = ([a,b]) => a*perS < 0.25 && (b-a)*perS < 0.10;
+    const keep = runs.filter(r => (r[1]-r[0])*perS >= 0.03 && !isOpening(r));
+    if(!keep.length) return [0,1];
+
+    // never grow back across a burst we deliberately rejected
+    let guard = 0;
+    for(const r of runs){ if(r[1] <= keep[0][0] && isOpening(r)) guard = r[1]; }
+
+    // Anything above EDGE counts as sound. Bridge the short gaps first: a stop
+    // consonant, or the dip between a vowel decaying away and the fricative
+    // after it, drops to room tone for a few tens of milliseconds. Growing
+    // outward without bridging halts on the first such dip and leaves the end
+    // of the word outside the window.
+    const active = new Uint8Array(n);
+    for(let i=0;i<n;i++) active[i] = peaks[i] > EDGE ? 1 : 0;
+    const bridge = Math.max(1, Math.round(0.15/perS));
+    for(let i=0;i<n;){
+      if(!active[i]){
+        let j=i; while(j<n && !active[j]) j++;
+        if(i>0 && j<n && (j-i) <= bridge) for(let k=i;k<j;k++) active[k]=1;
+        i=j;
+      } else i++;
+    }
+
+    let a = keep[0][0], b = keep[keep.length-1][1];
+    while(a > guard && active[a-1]) a--;
+    while(b < n && active[b]) b++;
+
+    // Padding must not reach back over a burst we just went to the trouble of
+    // excluding, so it stops at the guard rather than at zero.
+    return [
+      Math.max(guard*perS, a*perS - 0.08)/duration,
+      Math.min(duration, b*perS + 0.18)/duration
+    ];
+  }
+
+  /* ---- selection ------------------------------------------------------ */
+
+  function selDur(){ return take ? (selB-selA)*take.duration : 0; }
+
+  function showSel(){
+    if(!take){ selInfo.hidden = true; return; }
+    selInfo.hidden = false;
+    const full = selA<=0.001 && selB>=0.999;
+    selText.textContent = full
+      ? 'Whole clip selected — drag across the wave to trim'
+      : `${(selA*take.duration).toFixed(2)}s – ${(selB*take.duration).toFixed(2)}s  ·  ${selDur().toFixed(2)}s selected`;
+    fullBtn.hidden = full;
+  }
+
+  function fracAt(e){
+    const r = canvas.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (e.clientX - r.left)/r.width));
+  }
+
+  let drag=null, anchor=0, before=null;
+
+  slot.addEventListener('pointerdown', e => {
+    if(!take || busy) return;
+    const f = fracAt(e), w = canvas.clientWidth;
+    before = [selA, selB];
+    const da = Math.abs(f-selA)*w, db = Math.abs(f-selB)*w;
+    if(da<=GRAB_PX && da<=db) drag='a';
+    else if(db<=GRAB_PX) drag='b';
+    else { drag='new'; anchor=f; selA=f; selB=f; }
+    slot.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  slot.addEventListener('pointermove', e => {
+    if(!take || busy) return;
+    if(!drag){
+      const f = fracAt(e), w = canvas.clientWidth;
+      const near = Math.min(Math.abs(f-selA), Math.abs(f-selB))*w <= GRAB_PX;
+      slot.style.cursor = near ? 'ew-resize' : 'crosshair';
+      return;
+    }
+    const f = fracAt(e);
+    if(drag==='a') selA = Math.min(f, selB);
+    else if(drag==='b') selB = Math.max(f, selA);
+    else { selA = Math.min(anchor,f); selB = Math.max(anchor,f); }
+    showSel(); paint();
+  });
+
+  function endDrag(e){
+    if(!drag) return;
+    drag = null;
+    try{ slot.releasePointerCapture(e.pointerId); }catch(err){}
+    // a stray tap, or a window too short to hold a name, is not a selection
+    if(selDur() < MIN_SEL_S){ [selA, selB] = before; }
+    showSel(); paint();
+  }
+  slot.addEventListener('pointerup', endDrag);
+  slot.addEventListener('pointercancel', endDrag);
+
+  fullBtn.addEventListener('click', ()=>{ selA=0; selB=1; showSel(); paint(); });
+
+  /* ---- recording ------------------------------------------------------- */
 
   function toast(msg){
     toastEl.textContent = msg;
     toastEl.classList.add('on');
     clearTimeout(toastEl._t);
-    toastEl._t = setTimeout(()=>toastEl.classList.remove('on'), 2200);
+    toastEl._t = setTimeout(()=>toastEl.classList.remove('on'), 2400);
   }
 
-  function showHint(msg){
-    hint.style.display='block';
-    hint.textContent = msg;
-  }
+  function showHint(msg){ hint.style.display='block'; hint.textContent = msg; }
 
   function sync(){
-    const hasAudio = !!blob, hasName = nameIn.value.trim().length>0;
-    playBtn.disabled = !hasAudio;
-    discardBtn.disabled = !hasAudio;
-    pubBtn.disabled = !(hasAudio && hasName);
+    const has = !!take, named = nameIn.value.trim().length>0;
+    playBtn.disabled = !has || busy;
+    discardBtn.disabled = !has || busy;
+    enhanceBtn.disabled = !has || busy || voiced;
+    enhanceLabel.textContent = busy ? 'Working…' : (enhanced ? 'Original' : 'Clean up');
+    enhancePro.hidden = busy || enhanced;
+    enhanceBtn.classList.toggle('on', enhanced && !busy);
+    upsell.hidden = !(has && everCleaned);
+    pubBtn.disabled = !(has && named) || busy;
+    sigBtn.disabled = !(has && named) || busy;
+    asOthersBtn.disabled = asYouBtn.disabled = !has || busy;
+    voiceBtn.disabled = !has || busy || voiced || !voiceSel.value;
+    voiceBtn.textContent = converting ? 'Converting…' : 'Convert to this voice';
+    voiceOut.hidden = !voiceTake;
+    playAiBtn.disabled = playMineBtn.disabled = useVoiceBtn.disabled = busy;
+    useVoiceBtn.textContent = voiced ? 'Using the AI voice — switch back to mine' : 'Use the AI voice for my link';
+    useVoiceBtn.classList.toggle('on', voiced);
+    isoBtn.disabled = !has || busy || voiced || isoUsed || !keyIn.value.trim();
+    isoBtn.textContent = isolating ? 'Isolating…' : 'Isolate my voice';
+    isoOut.hidden = !isoTake;
+    playIsoBtn.disabled = playPreIsoBtn.disabled = busy;
+    useIsoBtn.disabled = busy || voiced;
+    useIsoBtn.textContent = isoUsed ? 'Using the isolated take — switch back' : 'Use the isolated take';
+    useIsoBtn.classList.toggle('on', isoUsed);
   }
+
+  /* ---- the signature snippet ------------------------------------------- */
+
+  function slugOf(){
+    return nameIn.value.trim().toLowerCase()
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'your-name';
+  }
+
+  // The extension has to match what is actually in the blob, or the server
+  // sends a Content-Type the browser will not play inline.
+  function fileName(){
+    const t = (take && take.blob.type) || '';
+    const ext = t.indexOf('wav')>-1 ? 'wav'
+              : t.indexOf('mpeg')>-1 || t.indexOf('mp3')>-1 ? 'mp3'
+              : t.indexOf('mp4')>-1 || t.indexOf('aac')>-1 ? 'm4a'
+              : t.indexOf('ogg')>-1 ? 'ogg' : 'webm';
+    return slugOf()+'.'+ext;
+  }
+
+  function esc(v){
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function buildSignature(){
+    if(!take) return;
+    const base = $('baseIn').value.trim().replace(/\/+$/,'');
+    const url = base + '/' + fileName();
+    const nm = nameIn.value.trim() || 'my name';
+    const ph = phonIn.value.trim();
+    const title = 'Hear how to say ' + nm + (ph ? ' \u2014 ' + ph : '');
+    const link = '<a href="'+esc(url)+'" title="'+esc(title)+'" style="text-decoration:none">\uD83D\uDD0A</a>';
+
+    $('sigHtml').value = link;
+    $('sigUrl').value = url;
+    $('sigPrev').innerHTML = esc(nm) + '&nbsp;&nbsp;' + link;
+
+    const kb = (take.blob.size/1024).toFixed(0);
+    $('sigNote').textContent = (take.blob.type||'').indexOf('webm')<0
+      ? fileName()+' \u00b7 '+kb+' KB. Fine for a test. Publishing should transcode to MP3 or AAC, which lands nearer 25 KB.'
+      : fileName()+' \u00b7 '+kb+' KB. Safari cannot play WebM \u2014 run Clean up first, which produces a WAV, or transcode before relying on this.';
+  }
+
+  sigBtn.addEventListener('click', ()=>{
+    buildSignature();
+    $('sigScrim').classList.add('on');
+    $('sigClose').focus();
+  });
+  $('baseIn').addEventListener('input', buildSignature);
+
+  $('copyHtmlBtn').addEventListener('click', async ()=>{
+    const el = $('sigHtml');
+    try{ await navigator.clipboard.writeText(el.value); }
+    catch(e){ el.select(); try{ document.execCommand('copy'); }catch(e2){} }
+    toast('Copied. Paste it into the Outlook signature editor.');
+  });
+
+  $('saveAudioBtn').addEventListener('click', ()=>{
+    if(!take) return;
+    const url = URL.createObjectURL(take.blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 10000);
+    toast('Saved '+fileName()+'. Put it next to index.html to test locally.');
+  });
 
   async function start(){
     stopPlayback();
@@ -429,45 +871,61 @@
       return;
     }
 
-    chunks=[]; peaks=[]; duration=0;
+    chunks=[]; livePeaks=[];
 
     audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    // awaiting getUserMedia can cost us the user-gesture context, which leaves
-    // the AudioContext suspended and the analyser reading pure silence
+    // awaiting getUserMedia can cost the user-gesture context, which leaves the
+    // AudioContext suspended and the analyser reading pure silence
     if(audioCtx.state==='suspended'){ try{ await audioCtx.resume(); }catch(e){} }
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 1024;
     audioCtx.createMediaStreamSource(media).connect(analyser);
 
-    // No mimeType: the browser's own default is the best-supported path on
-    // each engine, and forcing one is how you end up with an unplayable file.
+    // No mimeType: the browser's own default is the best-supported path on each
+    // engine, and forcing one is how you end up with an unplayable file.
     recorder = new MediaRecorder(media);
     recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
     recorder.onstop = () => { release(); finish(); };
-    recorder.start(250);   // flush periodically, so a failed final flush costs only the tail
+    recorder.start(250);
 
     startAt = performance.now();
+    micLive = false;
     hint.style.display='none';
-    timer.classList.add('on');
+    selInfo.hidden = true;
     timer.classList.remove('done');
     recBtn.classList.add('live');
-    recLabel.textContent = 'Stop';
-    playBtn.disabled = true; discardBtn.disabled = true; pubBtn.disabled = true;
+    // Not "Stop" yet: some microphones — Bluetooth ones especially — hand back
+    // pure digital silence for up to a second while they wake. Anything said
+    // then is lost, so ask for speech only once samples are actually arriving.
+    recLabel.textContent = 'Starting…';
+    playBtn.disabled = discardBtn.disabled = enhanceBtn.disabled = pubBtn.disabled = true;
     loop();
   }
 
   function loop(){
-    const buf = new Uint8Array(analyser.fftSize);
-    analyser.getByteTimeDomainData(buf);
-    let sum=0;
-    for(let i=0;i<buf.length;i++){ const d=(buf[i]-128)/128; sum+=d*d; }
-    // a small fixed gate — the finished take gets the measured one
-    peaks.push(Math.min(1, Math.max(0, Math.sqrt(sum/buf.length) - 0.012)*3.6));
-    if(peaks.length>260) peaks.shift();
+    // Float samples, not bytes: 8-bit time-domain data steps in 1/128ths, which
+    // is coarser than ordinary speech at this gain, and the old linear gate on
+    // top of it drew a whole first sentence as flat bars.
+    const buf = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buf);
+    let sum=0, peak=0;
+    for(let i=0;i<buf.length;i++){ const d=buf[i]; sum+=d*d; if(d>peak) peak=d; else if(-d>peak) peak=-d; }
 
-    bars(peaks, css('--rec'), -1);
+    // Waking microphones send exact zeros; real room tone never is.
+    if(!micLive && (peak > 1e-6 || performance.now()-startAt > 1500)){
+      micLive = true; micAt = performance.now();
+      recLabel.textContent = 'Stop';
+      timer.classList.add('on');
+    }
+
+    // In decibels, the way loudness is heard: -60dB draws flat, -15dB full.
+    const db = 20*Math.log10(Math.sqrt(sum/buf.length) + 1e-9);
+    livePeaks.push(micLive ? Math.min(1, Math.max(0, (db + 60)/45)) : 0);
+    if(livePeaks.length>260) livePeaks.shift();
+
+    bars(livePeaks, css('--rec'), -1, false);
     const secs = (performance.now()-startAt)/1000;
-    timer.textContent = secs.toFixed(1)+'s';
+    timer.textContent = micLive ? ((performance.now()-micAt)/1000).toFixed(1)+'s' : '';
     if(secs >= CAP_S){ stop(); return; }
     raf = requestAnimationFrame(loop);
   }
@@ -477,7 +935,7 @@
     cancelAnimationFrame(raf);
     wallS = (performance.now()-startAt)/1000;
     // Only ask the recorder to stop. Tearing the mic and the AudioContext down
-    // here would cut the final flush off mid-write; that happens in onstop.
+    // here would cut the final flush off mid-write and truncate the take.
     recorder.stop();
   }
 
@@ -486,14 +944,31 @@
     if(audioCtx && audioCtx.state!=='closed'){ audioCtx.close(); audioCtx=null; }
   }
 
+  // A take is its decoded samples. Playback reads that buffer and so does the
+  // waveform, which is the only way the two can agree — a MediaRecorder blob
+  // carries no duration header and no cues, so an <audio> element cannot seek
+  // it at all: assigning currentTime on one silently does nothing.
+  async function build(blob){
+    const buffer = await decode(blob);
+    return {
+      blob, buffer,
+      peaks: peaksFrom(buffer.getChannelData(0)),
+      duration: buffer.duration
+    };
+  }
+
+  function takeFromSamples(blob, data, sr){
+    const buffer = playCtx().createBuffer(1, data.length, sr);
+    buffer.copyToChannel(data, 0);
+    return { blob, buffer, peaks: peaksFrom(data), duration: buffer.duration };
+  }
+
   async function finish(){
     recBtn.classList.remove('live');
     recLabel.textContent = 'Record again';
 
-    blob = new Blob(chunks, {type: (recorder && recorder.mimeType) || ''});
+    const blob = new Blob(chunks, {type: (recorder && recorder.mimeType) || ''});
     if(!blob.size){
-      blob = null;
-      peaks = [];
       clearCanvas();
       timer.classList.remove('on');
       recLabel.textContent = 'Record';
@@ -502,67 +977,564 @@
       return;
     }
 
-    if(url) URL.revokeObjectURL(url);
-    url = URL.createObjectURL(blob);
-    audio = new Audio(url);
-    audio.onended = stopPlayback;
-
-    const m = await measure(blob);
-    if(m && m.duration > 0){
-      peaks = m.peaks;
-      duration = m.duration;
-    }else{
-      duration = wallS;   // undecodable: keep the live meter and the wall clock
+    try{
+      take = origin = await build(blob);
+    }catch(err){
+      take = origin = null;
+      clearCanvas();
+      timer.classList.remove('on');
+      recLabel.textContent = 'Record';
+      showHint('That take could not be read back. Try recording again.');
+      sync();
+      return;
     }
+    enhanced = false;
+    cleanTake = null; cleanSel = null;
+    resetVoice(); resetIso();
 
-    timer.textContent = duration.toFixed(1)+'s';
+    // Default the window to the speech, which is what drops the click the
+    // microphone makes as it opens. The handles are there to disagree.
+    originSel = detectSpeech(take.peaks, take.duration);
+    [selA, selB] = originSel;
+
+    timer.textContent = take.duration.toFixed(1)+'s';
     timer.classList.add('on','done');
-    bars(peaks, css('--ink-soft'), -1);
+    showSel();
+    paint();
     sync();
   }
 
-  /* ---- playback ----------------------------------------------------- */
+  /* ---- enhance --------------------------------------------------------- */
 
-  // MediaRecorder webm commonly reports Infinity until it has been seeked, so
-  // fall back to the duration decoded from the samples — never the wall clock.
-  function playLength(){
-    return (audio && isFinite(audio.duration) && audio.duration>0) ? audio.duration : duration;
+  function encodeWAV(data, sampleRate){
+    const buf = new ArrayBuffer(44 + data.length*2);
+    const view = new DataView(buf);
+    const tag = (o,str)=>{ for(let i=0;i<str.length;i++) view.setUint8(o+i, str.charCodeAt(i)); };
+    tag(0,'RIFF'); view.setUint32(4, 36+data.length*2, true); tag(8,'WAVE');
+    tag(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
+    view.setUint16(22,1,true); view.setUint32(24,sampleRate,true);
+    view.setUint32(28,sampleRate*2,true); view.setUint16(32,2,true); view.setUint16(34,16,true);
+    tag(36,'data'); view.setUint32(40, data.length*2, true);
+    let o=44;
+    for(let i=0;i<data.length;i++,o+=2){
+      const v = Math.max(-1, Math.min(1, data[i]));
+      view.setInt16(o, v<0 ? v*0x8000 : v*0x7FFF, true);
+    }
+    return new Blob([buf], {type:'audio/wav'});
+  }
+
+  function frameEnergy(data, win){
+    const frames = Math.floor(data.length/win);
+    const energy = new Float32Array(frames);
+    for(let f=0;f<frames;f++){
+      let sum=0; const s=f*win;
+      for(let i=s;i<s+win;i++) sum += data[i]*data[i];
+      energy[f] = Math.sqrt(sum/win);
+    }
+    return energy;
+  }
+
+  // Pull down what sits under the measured room tone. Frame-rate hysteresis
+  // plus smoothing, so the gate does not chatter between syllables, and a
+  // -18dB floor rather than silence, so the result does not sound switched.
+  //
+  // The room tone is measured on the whole recording (`reference`), not on the
+  // trimmed clip. A tight window holds no silence, so its quietest frames are
+  // the quiet ends of the name itself — and a floor measured there gates the
+  // trailing "-sh" away, which is exactly what truncated the cleaned take.
+  function gateNoise(data, sr, reference){
+    const win = Math.max(1, Math.round(sr*0.02));
+    const energy = frameEnergy(data, win);
+    const frames = energy.length;
+    if(frames < 8) return;
+
+    const ref = Float32Array.from(reference ? frameEnergy(reference, win) : energy).sort();
+    const floor = ref[Math.floor(ref.length*0.10)];
+    const peak  = ref[Math.floor(ref.length*0.98)];
+    if(!(floor < peak*0.4)) return;     // nothing quiet enough to call noise
+
+    // Hold the gate open for a while after the level drops, so a word that is
+    // fading out is heard to its end instead of being shut on mid-decay.
+    const OPEN = floor*3.0, SHUT = floor*1.6, FLOOR_G = 0.12;
+    const HOLD = Math.round(0.15/0.02);
+    const on = new Uint8Array(frames);
+    let open = false, held = 0;
+    for(let f=0;f<frames;f++){
+      if(energy[f] > OPEN){ open = true; held = HOLD; }
+      else if(energy[f] < SHUT && open && --held <= 0) open = false;
+      on[f] = open ? 1 : 0;
+    }
+    // Widen by two frames, so the attack of a word is never clipped by a
+    // late-opening gate. Wider than this and a short lead-in is entirely
+    // inside the open window, which leaves its hiss to be amplified by the
+    // normalise step that follows.
+    const wide = new Float32Array(frames);
+    for(let f=0;f<frames;f++){
+      let any = 0;
+      for(let k=-2;k<=2;k++){ const g=f+k; if(g>=0 && g<frames && on[g]) any = 1; }
+      wide[f] = any ? 1 : FLOOR_G;
+    }
+    // 5-tap smoothing gives ~50ms ramps instead of steps
+    const gain = new Float32Array(frames);
+    for(let f=0;f<frames;f++){
+      let sum=0, cnt=0;
+      for(let k=-2;k<=2;k++){ const g=f+k; if(g>=0 && g<frames){ sum+=wide[g]; cnt++; } }
+      gain[f] = sum/cnt;
+    }
+    for(let i=0;i<data.length;i++){
+      const pos = i/win, f = Math.min(frames-1, Math.floor(pos));
+      const nxt = Math.min(frames-1, f+1), t = pos-f;
+      data[i] *= gain[f]*(1-t) + gain[nxt]*t;
+    }
+  }
+
+  function normalise(data, target){
+    let peak=0;
+    for(let i=0;i<data.length;i++){ const v = data[i]<0 ? -data[i] : data[i]; if(v>peak) peak=v; }
+    if(peak < 1e-4) return;
+    const g = target/peak;
+    for(let i=0;i<data.length;i++) data[i] *= g;
+  }
+
+  // Also what finally kills a mic-open click sitting on the very first samples.
+  function fadeEnds(data, sr, secs){
+    const k = Math.min(Math.floor(data.length/2), Math.round(sr*secs));
+    for(let i=0;i<k;i++){
+      const f = i/k;
+      data[i] *= f;
+      data[data.length-1-i] *= f;
+    }
+  }
+
+  async function runEnhance(){
+    if(!take || busy) return;
+
+    if(enhanced){                       // back to the original
+      take = origin; enhanced = false;
+      [selA, selB] = cleanSel || originSel;
+      timer.textContent = take.duration.toFixed(1)+'s';
+      showSel(); paint(); sync();
+      toast('Back to the original take.');
+      return;
+    }
+
+    // already cleaned this exact window: flip straight to it
+    if(cleanTake && cleanSel && Math.abs(cleanSel[0]-selA)<1e-9 && Math.abs(cleanSel[1]-selB)<1e-9){
+      stopPlayback();
+      take = cleanTake; enhanced = true;
+      selA = 0; selB = 1;
+      timer.textContent = take.duration.toFixed(1)+'s';
+      showSel(); paint(); sync();
+      return;
+    }
+
+    busy = true; sync();
+    stopPlayback();
+    try{
+      const src = origin.buffer;
+      const sr = src.sampleRate, total = src.length;
+      const s0 = Math.max(0, Math.floor(selA*total));
+      const s1 = Math.min(total, Math.ceil(selB*total));
+      const len = Math.max(1, s1-s0);
+
+      // The compressor delays its output by a few ms of lookahead, so render a
+      // short tail past the clip or the final samples never come out.
+      const off = new OfflineAudioContext(1, len + Math.round(sr*0.05), sr);
+      const clip = off.createBuffer(1, len, sr);
+      clip.copyToChannel(src.getChannelData(0).slice(s0, s1), 0);
+
+      const node = off.createBufferSource(); node.buffer = clip;
+      const hp = off.createBiquadFilter();
+      hp.type='highpass'; hp.frequency.value=85; hp.Q.value=0.707;    // rumble, HVAC, handling
+      const presence = off.createBiquadFilter();
+      presence.type='highshelf'; presence.frequency.value=3000; presence.gain.value=2.5;
+      const comp = off.createDynamicsCompressor();
+      comp.threshold.value=-24; comp.knee.value=20; comp.ratio.value=3;
+      comp.attack.value=0.005; comp.release.value=0.12;
+
+      node.connect(hp); hp.connect(presence); presence.connect(comp);
+      comp.connect(off.destination);
+      node.start();
+
+      const rendered = await off.startRendering();
+      const data = Float32Array.from(rendered.getChannelData(0));
+      gateNoise(data, sr, src.getChannelData(0));
+      normalise(data, 0.89);            // about -1 dBFS
+      fadeEnds(data, sr, 0.008);
+
+      cleanSel = [selA, selB];
+      cleanTake = takeFromSamples(encodeWAV(data, sr), data, sr);
+      take = cleanTake; enhanced = true; everCleaned = true;
+      selA = 0; selB = 1;               // the window is the clip now
+
+      timer.textContent = take.duration.toFixed(1)+'s';
+      showSel(); paint();
+      toast(`Trimmed to ${take.duration.toFixed(2)}s, cleaned and levelled.`);
+    }catch(e){
+      toast('Could not enhance that take.');
+    }finally{
+      busy = false; sync();
+    }
+  }
+
+  enhanceBtn.addEventListener('click', runEnhance);
+
+  /* ---- playback --------------------------------------------------------- */
+
+  // The playhead runs off the same clock that is playing the samples, rather
+  // than off a media element that is guessing its own position.
+  function headFrac(){
+    if(!ac || !take) return 0;
+    const t = headOffset + (ac.currentTime - headStartedAt);
+    return Math.max(0, Math.min(1, t/take.duration));
   }
 
   function sweep(){
-    const d = playLength();
-    bars(peaks, css('--ink-soft'), d>0 ? Math.min(1, audio.currentTime/d) : 0);
+    paint();
     if(playing) playRaf = requestAnimationFrame(sweep);
   }
 
   function stopPlayback(){
     cancelAnimationFrame(playRaf);
-    if(audio){ audio.pause(); audio.currentTime = 0; }
+    if(srcNode){
+      srcNode.onended = null;
+      try{ srcNode.stop(); }catch(e){}
+      try{ srcNode.disconnect(); }catch(e){}
+      srcNode = null;
+    }
     playing = false;
-    playBtn.textContent = 'Play';
-    if(peaks.length) bars(peaks, css('--ink-soft'), -1);
+    if(activeBtn){ activeBtn.textContent = activeBtn.dataset.label; activeBtn = null; }
+    paint();
   }
 
-  playBtn.addEventListener('click', ()=>{
-    if(!audio) return;
-    if(playing){ stopPlayback(); return; }
-    audio.currentTime = 0;
-    audio.play().then(()=>{
-      playing = true;
-      playBtn.textContent = 'Stop';
-      sweep();
-    }).catch(()=> toast('Could not play that take.'));
-  });
+  // Pressing the button that is playing stops it; pressing another switches.
+  async function playClip(btn, buffer, offset, length, chain){
+    if(busy) return;
+    const same = playing && activeBtn===btn;
+    stopPlayback();
+    if(same) return;
+    try{
+      const c = playCtx();
+      if(c.state==='suspended') await c.resume();
 
-  /* ---- wiring ------------------------------------------------------- */
+      srcNode = c.createBufferSource();
+      srcNode.buffer = buffer;
+      srcNode.connect(chain ? chain(c) : c.destination);
+      srcNode.onended = ()=>{ if(playing) stopPlayback(); };
+
+      headStartedAt = c.currentTime;
+      headOffset = offset;
+      headShown = !!take && buffer===take.buffer;
+      srcNode.start(0, offset, Math.max(0.02, length));   // exact in, exact out — no seeking
+
+      playing = true;
+      activeBtn = btn; btn.textContent = 'Stop';
+      sweep();
+    }catch(e){ toast('Could not play that: '+((e && e.message) || e)); }
+  }
+
+  // the current take, within the selection window
+  function playTake(btn, chain){
+    if(!take) return;
+    playClip(btn, take.buffer, selA*take.duration, (selB-selA)*take.duration, chain);
+  }
+
+  playBtn.addEventListener('click', ()=> playTake(playBtn));
+
+  /* ---- lab: hear it like you do ----------------------------------------- */
+
+  // What you hear of yourself while speaking arrives partly through the skull,
+  // which carries the low end far better than air does. A recording has only
+  // the air path, so it sounds thin to its owner. Put some of that low end back
+  // and take a little of the top off. An approximation: every head differs.
+  // Playback only — the published take stays as everyone else hears you.
+  // A shelf below ~300Hz alone is inaudible on laptop speakers, which barely
+  // reproduce it, so the lift is centred on the low-mids they can play.
+  // One slider drives all of it: bass up and treble down together, with the
+  // output trimmed to match so a stronger setting does not just sound louder.
+  const selfAmt = $('selfAmt'), selfAmtOut = $('selfAmtOut');
+  let liveChain = null;
+
+  function selfAmount(){ return selfAmt.value/100; }
+
+  function applySelf(n, now){
+    const a = selfAmount(), bodyDb = 13*a;
+    const set = (param, v) => now ? param.setTargetAtTime(v, now, 0.03) : (param.value = v);
+    set(n.body.gain, bodyDb);
+    set(n.low.gain, 8*a);
+    set(n.high.gain, -11*a);
+    set(n.trim.gain, Math.pow(10, -0.6*bodyDb/20));
+  }
+
+  function selfHearChain(c){
+    const body = c.createBiquadFilter();
+    body.type='peaking'; body.frequency.value=280; body.Q.value=0.7;
+    const low = c.createBiquadFilter();
+    low.type='lowshelf'; low.frequency.value=160;
+    const high = c.createBiquadFilter();
+    high.type='highshelf'; high.frequency.value=2200;
+    const trim = c.createGain();
+    body.connect(low); low.connect(high); high.connect(trim); trim.connect(c.destination);
+    liveChain = {c, body, low, high, trim};
+    applySelf(liveChain);
+    return body;
+  }
+
+  function showAmt(){ selfAmtOut.textContent = '· '+selfAmt.value+'%'; }
+  selfAmt.addEventListener('input', ()=>{
+    showAmt();
+    if(liveChain && playing && activeBtn===asYouBtn) applySelf(liveChain, liveChain.c.currentTime);
+  });
+  showAmt();
+
+  asOthersBtn.addEventListener('click', ()=> playTake(asOthersBtn));
+  asYouBtn.addEventListener('click', ()=> playTake(asYouBtn, selfHearChain));
+
+  /* ---- lab: another voice (ElevenLabs speech-to-speech) ------------------ */
+
+  const EL = 'https://api.elevenlabs.io/v1';
+  const KEY_STORE = 'smn.elevenlabs.key';
+
+  function labSay(msg){ labStatus.textContent = msg; }
+  function readKey(){ try{ return localStorage.getItem(KEY_STORE) || ''; }catch(e){ return ''; } }
+  function writeKey(v){
+    try{ v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); }catch(e){}
+  }
+
+  async function elError(r){
+    try{
+      const j = await r.json(), d = j && j.detail;
+      const m = Array.isArray(d) ? d.map(x => x.msg).join('; ')
+              : d && (d.message || d.status || (typeof d==='string' ? d : ''));
+      if(m) return m;
+    }catch(e){}
+    return r.status===401 ? 'the key was refused' : 'HTTP '+r.status;
+  }
+
+  function resetVoice(){
+    voiced = false; voiceTake = null; voiceKey = ''; voiceSrc = null; beforeVoice = null;
+  }
+
+  async function loadVoices(){
+    const key = keyIn.value.trim();
+    if(!key){ labSay('Paste your ElevenLabs API key first.'); keyIn.focus(); return; }
+    writeKey(key);
+    loadVoicesBtn.disabled = true;
+    labSay('Loading voices…');
+    try{
+      const r = await fetch(EL+'/voices', {headers:{'xi-api-key':key}});
+      if(!r.ok) throw new Error(await elError(r));
+      const list = ((await r.json()).voices || [])
+        .sort((a,b)=>a.name.localeCompare(b.name));
+      voiceSel.innerHTML = '';
+      for(const v of list){
+        const o = document.createElement('option');
+        const l = v.labels || {};
+        o.value = v.voice_id;
+        o.textContent = v.name + [l.gender, l.accent].filter(Boolean).map(x=>' · '+x).join('');
+        voiceSel.appendChild(o);
+      }
+      voiceSel.disabled = !list.length;
+      if(!list.length) voiceSel.innerHTML = '<option value="">No voices on this account</option>';
+      labSay(!list.length ? 'No voices on this account.'
+        : list.length+' voices loaded. '+(take ? 'Pick one and press Convert.' : 'Record your name above, then pick a voice and press Convert.'));
+    }catch(e){
+      labSay('Could not load voices: '+(e.message==='Failed to fetch' ? 'ElevenLabs could not be reached' : e.message)+'.');
+    }finally{
+      loadVoicesBtn.disabled = false;
+      sync();
+    }
+  }
+
+  function useVoice(){
+    if(!voiceTake || busy) return;
+    stopPlayback();
+    if(voiced){
+      take = beforeVoice.take; enhanced = beforeVoice.enhanced;
+      [selA, selB] = beforeVoice.sel;
+      voiced = false;
+    } else {
+      beforeVoice = {take, enhanced, sel:[selA, selB]};
+      take = voiceTake; voiced = true; selA = 0; selB = 1;
+    }
+    timer.textContent = take.duration.toFixed(1)+'s';
+    showSel(); paint(); sync();
+  }
+
+  async function convertVoice(){
+    if(!take || busy || voiced) return;
+    const key = keyIn.value.trim(), voiceId = voiceSel.value;
+    if(!key){ labSay('Paste your ElevenLabs API key first.'); keyIn.focus(); return; }
+    if(!voiceId) return;
+
+    // already paid for this exact conversion
+    const want = [voiceId, isoUsed, enhanced, selA, selB].join('|');
+    if(voiceTake && voiceKey===want){ labSay('Already converted — press ▶ AI voice.'); return; }
+
+    busy = converting = true; sync();
+    stopPlayback();
+    labSay('Sending the selected clip to ElevenLabs…');
+    try{
+      const src = take.buffer, total = src.length;
+      const s0 = Math.max(0, Math.floor(selA*total));
+      const s1 = Math.min(total, Math.ceil(selB*total));
+      const clip = src.getChannelData(0).slice(s0, s1);
+
+      // Send a second of silence after the name. The model is weakest at the
+      // very end of its input, and a clip that stops right after a quiet
+      // unvoiced ending — the "-sh" of Prantosh — had that ending dropped: the
+      // converted take said "Praan-To". The isolator already got this padding
+      // and kept the whole name, which is what pointed here.
+      const padded = new Float32Array(clip.length + Math.round(src.sampleRate*1.0));
+      padded.set(clip);
+      const fd = new FormData();
+      fd.append('audio', encodeWAV(padded, src.sampleRate), 'name.wav');
+      fd.append('model_id', 'eleven_multilingual_sts_v2');
+
+      const r = await fetch(EL+'/speech-to-speech/'+encodeURIComponent(voiceId)+'?output_format=mp3_44100_128', {
+        method:'POST', headers:{'xi-api-key':key}, body:fd
+      });
+      sentAway = true;
+      if(!r.ok) throw new Error(await elError(r));
+      const raw = await r.blob();
+      const back = await decode(raw.type.indexOf('audio')===0 ? raw : new Blob([raw], {type:'audio/mpeg'}));
+
+      // Cut the padding back off, keeping 0.3s past the name: the output is
+      // time-aligned with the input, and a margin covers any small MP3 shift.
+      const keepS = clip.length/src.sampleRate + 0.3;
+      const n = Math.min(back.length, Math.round(back.sampleRate*keepS));
+      const data = Float32Array.from(back.getChannelData(0).subarray(0, n));
+      fadeEnds(data, back.sampleRate, 0.005);
+
+      voiceTake = takeFromSamples(encodeWAV(data, back.sampleRate), data, back.sampleRate);
+      voiceKey = want;
+      voiceSrc = {buffer: src, offset: selA*take.duration, length: (selB-selA)*take.duration};
+      labSay('Done — '+voiceSel.options[voiceSel.selectedIndex].textContent.split(' · ')[0]
+        +' saying it your way. Compare the two below.');
+    }catch(e){
+      labSay('Conversion failed: '+(e.message==='Failed to fetch' ? 'ElevenLabs could not be reached' : e.message)+'.');
+    }finally{
+      busy = converting = false; sync();
+    }
+  }
+
+  /* ---- lab: voice isolation (ElevenLabs) --------------------------------- */
+
+  function isoSay(msg){ isoStatus.textContent = msg; }
+  function resetIso(){ isoTake = null; isoSrc = null; isoKey = ''; isoUsed = false; preIso = null; }
+
+  async function isolate(){
+    if(!take || busy || voiced || isoUsed) return;
+    const key = keyIn.value.trim();
+    if(!key){ isoSay('Paste your ElevenLabs API key first.'); keyIn.focus(); return; }
+
+    const want = [enhanced, selA, selB].join('|');
+    if(isoTake && isoKey===want){ isoSay('Already isolated — press ▶ Isolated.'); return; }
+
+    busy = isolating = true; sync();
+    stopPlayback();
+    isoSay('Sending the selected clip to ElevenLabs…');
+    try{
+      const src = take.buffer, sr = src.sampleRate, total = src.length;
+      const s0 = Math.max(0, Math.floor(selA*total));
+      const s1 = Math.min(total, Math.ceil(selB*total));
+      const clip = src.getChannelData(0).slice(s0, s1);
+
+      // A name is a second or two and the isolator is built for longer audio,
+      // so send it with silence after it and cut the answer back afterwards.
+      const padded = new Float32Array(Math.max(clip.length, Math.round(sr*5)));
+      padded.set(clip);
+      const fd = new FormData();
+      fd.append('audio', encodeWAV(padded, sr), 'name.wav');
+
+      const r = await fetch(EL+'/audio-isolation', {method:'POST', headers:{'xi-api-key':key}, body:fd});
+      sentAway = true;
+      if(!r.ok) throw new Error(await elError(r));
+      const raw = await r.blob();
+      const back = await decode(raw.type.indexOf('audio')===0 ? raw : new Blob([raw], {type:'audio/mpeg'}));
+
+      // Keep 0.1s past the clip: an MP3 decoder can shift the audio by a few
+      // tens of ms, and cutting exactly at the clip length would eat the end.
+      const keepS = clip.length/sr + 0.1;
+      const n = Math.min(back.length, Math.round(back.sampleRate*keepS));
+      const data = Float32Array.from(back.getChannelData(0).subarray(0, n));
+      fadeEnds(data, back.sampleRate, 0.005);
+
+      isoTake = takeFromSamples(encodeWAV(data, back.sampleRate), data, back.sampleRate);
+      isoKey = want;
+      isoSrc = {buffer: src, offset: selA*take.duration, length: (selB-selA)*take.duration};
+      isoSay('Done. Compare the two below, then use it if it is better.');
+    }catch(e){
+      isoSay('Isolation failed: '+(e.message==='Failed to fetch' ? 'ElevenLabs could not be reached' : e.message)+'.');
+    }finally{
+      busy = isolating = false; sync();
+    }
+  }
+
+  function useIso(){
+    if(!isoTake || busy || voiced) return;
+    stopPlayback();
+    if(isoUsed){
+      ({origin, originSel, take, enhanced, cleanTake, cleanSel} = preIso);
+      [selA, selB] = preIso.sel;
+      isoUsed = false;
+    } else {
+      preIso = {origin, originSel, take, enhanced, cleanTake, cleanSel, sel:[selA, selB]};
+      origin = take = isoTake; originSel = [0, 1];
+      enhanced = false; cleanTake = null; cleanSel = null;
+      selA = 0; selB = 1;
+      isoUsed = true;
+    }
+    timer.textContent = take.duration.toFixed(1)+'s';
+    showSel(); paint(); sync();
+  }
+
+  isoBtn.addEventListener('click', isolate);
+  playIsoBtn.addEventListener('click', ()=> isoTake &&
+    playClip(playIsoBtn, isoTake.buffer, 0, isoTake.duration));
+  playPreIsoBtn.addEventListener('click', ()=> isoSrc &&
+    playClip(playPreIsoBtn, isoSrc.buffer, isoSrc.offset, isoSrc.length));
+  useIsoBtn.addEventListener('click', useIso);
+
+  playAiBtn.addEventListener('click', ()=> voiceTake &&
+    playClip(playAiBtn, voiceTake.buffer, 0, voiceTake.duration));
+  playMineBtn.addEventListener('click', ()=> voiceSrc &&
+    playClip(playMineBtn, voiceSrc.buffer, voiceSrc.offset, voiceSrc.length));
+  useVoiceBtn.addEventListener('click', useVoice);
+
+  keyIn.value = readKey();
+  // Pasting the key is the whole step: voices load by themselves.
+  let keyWait;
+  keyIn.addEventListener('input', ()=>{
+    clearTimeout(keyWait);
+    const k = keyIn.value.trim();
+    sync();
+    if(k.length >= 20) keyWait = setTimeout(loadVoices, 500);
+  });
+  $('forgetKeyBtn').addEventListener('click', ()=>{
+    writeKey(''); keyIn.value = '';
+    voiceSel.innerHTML = '<option value="">Load your voices first</option>';
+    voiceSel.disabled = true;
+    labSay('Key removed from this browser.');
+    sync();
+  });
+  loadVoicesBtn.addEventListener('click', loadVoices);
+  voiceSel.addEventListener('change', sync);
+  voiceBtn.addEventListener('click', convertVoice);
+
+  /* ---- wiring ------------------------------------------------------------ */
 
   nameIn.addEventListener('input', ()=>{
     const v = nameIn.value.trim();
     cardName.textContent = v || 'Your name';
     cardName.classList.toggle('empty', !v);
     sync();
+    if($('sigScrim').classList.contains('on')) buildSignature();
   });
-  phonIn.addEventListener('input', ()=>{ cardPhon.textContent = phonIn.value.trim(); });
+  phonIn.addEventListener('input', ()=>{
+    cardPhon.textContent = phonIn.value.trim();
+    if($('sigScrim').classList.contains('on')) buildSignature();
+  });
 
   recBtn.addEventListener('click', ()=>{
     if(recorder && recorder.state==='recording') stop(); else start();
@@ -570,14 +1542,20 @@
 
   discardBtn.addEventListener('click', ()=>{
     stopPlayback();
-    if(url) URL.revokeObjectURL(url);
-    blob=null; url=null; audio=null; chunks=[]; peaks=[]; duration=0;
+    take = origin = null;
+    cleanTake = null; cleanSel = null; everCleaned = false;
+    chunks=[]; livePeaks=[]; enhanced=false; selA=0; selB=1;
+    const wasSent = sentAway;
+    resetVoice(); resetIso(); sentAway = false;
     clearCanvas();
     timer.classList.remove('on','done');
+    selInfo.hidden = true;
     showHint('No recording yet');
     recLabel.textContent='Record';
     sync();
-    toast('Deleted. Nothing was ever uploaded.');
+    toast(wasSent
+      ? 'Deleted here. The clip sent to ElevenLabs is under their retention policy.'
+      : 'Deleted. Nothing was ever uploaded.');
   });
 
   pubBtn.addEventListener('click', ()=>{
@@ -587,18 +1565,80 @@
     $('closeBtn').focus();
   });
 
+  // One file carries everything publish.js needs: the name, how to say it, and
+  // the audio as a WAV of exactly the selected window — so what gets published
+  // is what the Play button played, whatever format the browser recorded in.
+  $('exportBtn').addEventListener('click', ()=>{
+    if(!take) return;
+    const b = take.buffer, total = b.length;
+    const s0 = Math.max(0, Math.floor(selA*total));
+    const s1 = Math.min(total, Math.ceil(selB*total));
+    const wav = encodeWAV(b.getChannelData(0).slice(s0, s1), b.sampleRate);
+    const r = new FileReader();
+    r.onload = ()=>{
+      const job = {
+        slug: slugOf(), name: nameIn.value.trim(), phonetic: phonIn.value.trim(),
+        audio: String(r.result).split(',')[1], audioType: 'audio/wav'
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(job)], {type:'application/json'}));
+      const a = document.createElement('a');
+      a.href = url; a.download = job.slug + '.saymyname.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 10000);
+      toast('Saved '+a.download+'. Now run: node publish.js ~/Downloads/'+a.download);
+    };
+    r.readAsDataURL(wav);
+  });
+
   function dismiss(){ scrim.classList.remove('on'); pubBtn.focus(); }
   $('closeBtn').addEventListener('click', dismiss);
   $('keepBtn').addEventListener('click', dismiss);
   scrim.addEventListener('click', e => { if(e.target===scrim) dismiss(); });
-  document.addEventListener('keydown', e => { if(e.key==='Escape' && scrim.classList.contains('on')) dismiss(); });
+
+  function dismissSig(){ $('sigScrim').classList.remove('on'); sigBtn.focus(); }
+  $('sigClose').addEventListener('click', dismissSig);
+  $('sigDone').addEventListener('click', dismissSig);
+  $('sigScrim').addEventListener('click', e => { if(e.target===$('sigScrim')) dismissSig(); });
+
+  document.addEventListener('keydown', e => {
+    if(e.key!=='Escape') return;
+    if(scrim.classList.contains('on')) dismiss();
+    else if($('sigScrim').classList.contains('on')) dismissSig();
+  });
 
   window.addEventListener('beforeunload', e => {
-    if(blob){ e.preventDefault(); e.returnValue=''; }
+    if(take){ e.preventDefault(); e.returnValue=''; }
   });
+
+  // Test hook: lets an automated browser read what the page actually computed,
+  // instead of guessing from the outside. Reads only; changes no behaviour.
+  window.__smn = {
+    get take(){ return take; },
+    get sel(){ return [selA, selB]; },
+    get enhanced(){ return enhanced; },
+    get voiced(){ return voiced; },
+    get isoUsed(){ return isoUsed; },
+    get peaks(){ return take ? take.peaks : null; },
+    get duration(){ return take ? take.duration : 0; },
+    channel(){ return take ? Array.from(take.buffer.getChannelData(0)) : null; },
+    sampleRate(){ return take ? take.buffer.sampleRate : 0; },
+    setSel(a,b){ selA=a; selB=b; showSel(); paint(); }
+  };
 
   fit();
   sync();
+  if(keyIn.value) loadVoices();
+
+  // The card at the top is the thing being made, and it stays a placeholder
+  // until there is a name in it, so start the cursor there.
+  //   preventScroll: the field sits well below the fold, and focusing it
+  //     without this scrolls the header out of view on arrival.
+  //   pointer:fine: on a phone, autofocus throws the keyboard up over half
+  //     the page before anyone has decided to type.
+  if(matchMedia('(pointer: fine)').matches){
+    try{ nameIn.focus({preventScroll:true}); }
+    catch(e){ nameIn.focus(); }
+  }
 })();
 </script>
 </body>
